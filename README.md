@@ -48,17 +48,28 @@ Assets such as icons or 3D models can be created using Unity editor. We currentl
 
 Following steps describe how to package a 3D model.
 
-1. Create directory under `Assets` with your mod name, in our case that is `ExampleMod`.
-2. Under `Assets/ExampleMod`, import 3D model (incl. textures) to Unity by drag&drop. Creating a separate folder for each asset is a recommended.
-3. Drag the 3D model file to the Unity editor pane, set its position and rotation to all zeros using Inspector and make it look like you want (add materials, etc.). Note: it is important that your asset has zero position and rotation. If you need to reposition it, edit the 3D model or make it a child that can be moved.
-4. Many models in game require a collider so they are selectable. Select the root object and a simple Box collider by clicking on `Add Component`. Position the collider such that it covers the model well. It is possible to add more than one colliders when the model is complex. If you don't do this, game will attempt to create a new collider.
-5. Create a prefab by dragging the root object and dropping it to the project pane. This will make a new `.prefab` file.
-6. Assign the newly created prefab to any asset bundle from the drop-down menu on the bottom of Inspector tab. You can create a new one called `asdf` or pick any existing one.
-7. Right click anywhere in the project window (on any file or empty area) and select `[MaFi] Build asset bundles`. After Unity is done processing, notice that the AssetBundle  name of your prefab was set to a new value.
-8. Locate built asset bundles in the root directory of your Unity project in `AssetBundles` directory. You should see bundle files without extension and some `.manifest` files there.
-9. To use prefabs in your mod, simply right-click any prefab and select `Copy Path`. That path can be used to load your prefab in the game.
+1. Ensure that your Unity project has a new directory under `Assets` with your mod name, in our case that is `ExampleMod`, create it if necessary.
+2. Under the mod directory `Assets/ExampleMod`, import 3D model (incl. textures) to Unity by drag&drop of your files. Creating a separate folder for each asset is a recommended.
+3. Drag the 3D model file to the Unity scene, set its position and rotation to all zeros using Inspector and make it look like as you want (add materials, etc.). Note: it is important that your asset has zero position and rotation. If you need to reposition it, edit the 3D model or make it a child that can be moved.
+4. Create a prefab by dragging the root object and dropping it to the project pane. This will make a new `.prefab` file.
+5. Assign the newly created prefab to any asset bundle from the drop-down menu on the bottom of Inspector tab. You can create a new bundle called `asdf` or pick any existing one.
+6. Right click anywhere in the project window (on any file or empty area) and select `[MaFi] Build asset bundles`. After Unity is done processing, notice that the AssetBundle  name of your prefab was set to a new value.
+7. To use prefabs in your mod, simply right-click any prefab and select `Copy Path`. That path can be used to load your prefab in the game.
 
 If you do any changes to your prefabs, simply repeat step #6 to re-compile asset bundles.
+
+### Creation of asset bundle with texture or icon
+
+Packaging icons (for example for new products) as an asset bundle is very easy.
+
+1. Ensure that your Unity project has a new directory under `Assets` with your mod name, in our case that is `ExampleMod`, create it if necessary.
+2. Under the mod directory `Assets/ExampleMod`, import image as png or jpg file by drag&drop. Creating a separate folder for each asset is a recommended.
+3. Configure newly imported textures to have `Sprite (2D and UI)` type.
+4. Assign the newly imoprted textures to any asset bundle from the drop-down menu on the bottom of Inspector tab. You can create a new bundle called `asdf` or pick any existing one.
+5. Right click anywhere in the project window (on any file or empty area) and select `[MaFi] Build asset bundles`. After Unity is done processing, notice that the AssetBundle  name of your prefab was set to a new value.
+6. To use an icon in your mod (for example as a product icon), simply right-click on a texture and select `Copy Path`. That path can be used to load your prefab in the game.
+
+Note: Unlike 3D models, textures do not need to have `prefab` created.
 
 ### Packaging asset bundles to your mod
 
@@ -68,9 +79,10 @@ Once your Asset bundles are ready, follow these steps to package them with your 
 2. Locate the `AssetBundles` directory from in your Unity project root and copy it to the root of your mod dir, in our example `ExampleMod/AssetBundles`.
 3. (optional) If you want to make it neat, you really only need the asset bundles (files in format `YourPrefabName_xxxx` without extension) and the `bundles.manifest` file. All other `.manifest` files could be removed as well as the `AssetBundles` file.
 
-TODO..
+And that's it, all asset bundles will be now loadable in the game.
 
 ## Questions, issues
 
 Note that mod support is experimental and APIs might change.
+If you are having issues, always examine logs, they contain a lot of useful information.
 If you'd like to discuss modding topics with the devs and the community visit our [Discord channel #alpha-modiding](https://discord.gg/JxmUbGsNRU).
