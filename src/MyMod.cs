@@ -1,4 +1,5 @@
-﻿using Mafi;
+﻿using ExampleMod.ReferenceCode;
+using Mafi;
 using Mafi.Base;
 using Mafi.Core;
 using Mafi.Core.Mods;
@@ -7,6 +8,8 @@ namespace ExampleMod {
 	public sealed class MyMod : DataOnlyMod {
 
 		public override string Name => "Example mod";
+
+		public override int Version => 1;
 
 
 		// Constructor that lists mod dependencies as parameters. You probably want to depend on both core and base
@@ -27,6 +30,8 @@ namespace ExampleMod {
 			// Registers all research from this assembly. See ExampleResearchData.cs for examples.
 			registrator.RegisterDataWithInterface<IResearchNodesData>();
 
+			// Uncomment this to register custom balancers.
+			//registrator.RegisterData<BalancersData>();
 		}
 
 	}
