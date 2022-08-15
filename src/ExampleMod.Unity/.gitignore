@@ -1,0 +1,18 @@
+# =============== #
+# Unity generated #
+# =============== #
+Temp/
+Obj/
+UnityGenerated/
+LayoutsOutput/
+Library/
+Assets/AssetStoreTools*
+Assets/Sandbox*
+Assets/UnityVS/Editor/*
+Assets/DLLs/*.dll
+Assets/DLLs/*.meta
+AssetBundles/*
+game_Data/*
+game.exe
+UnityPlayer.dll
+UserSettings/

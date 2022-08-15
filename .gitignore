@@ -1,0 +1,21 @@
+**/bin/**
+**/obj/**
+
+*.log
+*.map
+*.user
+*.vs
+
+/out/**
+Builds/
+*.svd
+*.userprefs
+*.pidb
+*.suo
+*.user
+.vsconfig
+
+# Windows rubbish
+Thumbs.db
+ehthumbs.db
+desktop.ini
