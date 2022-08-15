@@ -43,12 +43,12 @@ One-time Unity setup needed for MaFi tools to function properly.
 
 1. Download and install Unity 2021.6.f1 from https://unity3d.com/unity/qa/lts-releases.
 2. Locate the test scene in `src/ExampleMod.Unity`. Do not open it yet.
-3. Create a directory link called `UnityRootSymlink` in `src\ExampleMod.Unity\Library` that points to the Unity installation folder (e.g. `C:\Program Files\Unity`). This folder should have the `Library` directory in it. This can be done by invoking `mklink \D <targer> <srouce>` command in console window with admin priviliges. For example: `mklink /D "D:\CaptainOfIndustryModding\src\ExampleMod.Unity\Library\UnityRootSymlink" "C:\Program Files\Unity"`.
-3. Create hard-links for necessary DLLs from your Steam installation by running the `src/ExampleMod.Unity/Assets/DLLs/create_dll_hardlinks.bat` batch file. You will need to run it under admin privileges (right-click, Run as Administrator).
-  * It is a good practice to look at any code you are running under admin privileges, so feel free to inspect the batch file first.
-  * Alternatively, you could also copy the DLLs in question to this directory but hard link is better since any update to the original files will propagate.
-4. Open the test scene from `src/ExampleMod.Unity/Assets/ExampleModScene.unity`.
-5. Verify that you can see `MaFi` in the top menu. If not, linked DLLs were not properly loaded and you will not be able to create assets.
+3. Create a directory link called `UnityRootSymlink` in `src\ExampleMod.Unity\Library` that points to the Unity installation folder (e.g. `C:\Program Files\Unity`). This folder should have the `Library` directory in it. This can be done by invoking `mklink \D <target> <srouce>` command in console window with admin priviliges. For example: `mklink /D "D:\CaptainOfIndustryModding\src\ExampleMod.Unity\Library\UnityRootSymlink" "C:\Program Files\Unity"`.
+4. Create hard-links for necessary DLLs from your Steam installation by running the `src/ExampleMod.Unity/Assets/DLLs/create_dll_hardlinks.bat` batch file. You will need to run it under admin privileges (right-click, Run as Administrator).
+   - It is a good practice to look at any code you are running under admin privileges, so feel free to inspect the batch file first.
+   - Alternatively, you could also copy the DLLs in question to this directory but hard link is better since any update to the original files will propagate.
+5. Open the test scene from `src/ExampleMod.Unity/Assets/ExampleModScene.unity`.
+6. Verify that you can see `MaFi` in the top menu. If not, linked DLLs were not properly loaded and you will not be able to create assets.
 
 Unity is very aggressive in changing paths in project files from relative absolute. We recommend to mark the project files as "unchanged" in GIT to not commit them. However, if you even make significant changes, you will need to manually replace paths before commiting them.
 
