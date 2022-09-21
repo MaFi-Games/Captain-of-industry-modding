@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="PreBuild.target" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net46</TargetFramework>
