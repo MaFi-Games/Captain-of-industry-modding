@@ -1,4 +1,6 @@
-﻿using Mafi.Base;
+﻿using Mafi;
+using Mafi.Base;
+using Mafi.Core.Buildings.Farms;
 using ProductID = Mafi.Core.Products.ProductProto.ID;
 
 namespace ExampleMod;
@@ -20,8 +22,11 @@ public static partial class ExampleModIds {
 		public static readonly ProductID ExampleFluidProduct = Ids.Products.CreateId("ExampleFluidProduct");
 
 		[LooseProduct(material: Assets.Base.Products.Loose.Dirt_mat,
-			icon: Assets.Base.Products.Icons.Dirt_svg, dumpByDefault: true, isFarmable: true)]
+			icon: Assets.Base.Products.Icons.Dirt_svg, dumpByDefault: true)]
 		public static readonly ProductID ExampleLooseProduct = Ids.Products.CreateId("ExampleLooseProduct");
+		// This makes the loose product dumpable.
+		[ProtoParamFor(nameof(ExampleLooseProduct))]
+		public static readonly LooseProductParam ExampleLooseProductParams = new(dumpAs: Ids.TerrainMaterials.Dirt);
 
 		[MoltenProduct(material: Assets.Base.Products.Molten.Copper_mat,
 			prefab: Assets.Base.Products.Molten.MoltenCopper_prefab,

@@ -14,7 +14,7 @@ internal class ExampleMachineData : IModData {
 			.Description("Testing furnace")
 			.SetCost(Costs.Build.CP(80).Workers(10))
 			// For examples of layouts see `Mafi.Base.BaseMod` and `EntityLayoutParser`.
-			.SetLayout(new EntityLayoutParams(useNewLayoutSyntax: true),
+			.SetLayout(new EntityLayoutParams(),
 				"   [2][2][2][3][3][3][3][3][2]>~Y",
 				"   [2][2][3][5][5][7][7][4][3]   ",
 				"A~>[2][2][3][5][5][7][7][4][3]>'V",

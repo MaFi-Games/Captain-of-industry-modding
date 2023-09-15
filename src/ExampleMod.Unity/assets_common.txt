@@ -1,6 +1,3 @@
 blastfurnace_d374
     Assets/ExampleMod/BlastFurnace.prefab
 
-blastfurnace_sound_af85
-    Assets/ExampleMod/ExampleModel/BlastFurnace_Sound.prefab
-
