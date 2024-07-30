@@ -27,7 +27,8 @@ namespace ProgramableNetwork
             this.Style = style;
             this.m_input = input;
 
-            this.SetSize(100, 20);
+            this.SetSize(200, 20);
+            SetSizeMode(SizeMode.Dynamic);
 
             tglTrue = Builder
                 .NewToggleBtn("toggle-true_" + DateTime.Now.Ticks)

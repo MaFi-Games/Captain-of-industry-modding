@@ -29,11 +29,12 @@ namespace ProgramableNetwork
 
             SetBackground(Mafi.ColorRgba.DarkDarkGray);
             SetStackingDirection(Direction.TopToBottom);
+            SetSizeMode(SizeMode.Dynamic);
 
             this.m_tabsHolder = Builder
                 .NewStackContainer("tabs")
                 .SetStackingDirection(Direction.LeftToRight)
-                .SetSizeMode(SizeMode.StaticDirectionAligned)
+                .SetSizeMode(SizeMode.Dynamic)
                 .SetHeight(20)
                 .AppendTo(this);
         }
@@ -82,7 +83,7 @@ namespace ProgramableNetwork
             {
                 bool isThat = m_tabs[i] == variableTab;
                 m_buttons[i].SetIsOn(isThat);
-                m_tabs[i].SetVisibility(isThat);
+                SetItemVisibility(m_tabs[i], isThat);
             }
         }
     }

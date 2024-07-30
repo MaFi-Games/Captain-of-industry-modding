@@ -72,20 +72,16 @@ namespace ProgramableNetwork
         {
             SetPaused(true);
 
-            var instructions = data.GetArray<Instruction>("instructions", (i) => Instruction.Deserialize(i, out var ins) ? ins : new Instruction(NewIds.Instructions.Invalid, 0));
+            var instructions = data.GetArray<Instruction>("instructions", (i) => Instruction.Deserialize(i, out var ins) ? ins : Instruction.Invalid());
             Instructions.Clear();
 
-            foreach (var item in instructions)
+            foreach (var itemf in instructions)
             {
-                item.Context = Context;
-                foreach (var input in item.Inputs)
-                {
-                    input.Context = Context;
-                }
+                var item = itemf;
+                item.Recontext(Context);
+
                 if (item.Prototype.InstructionLevel > Prototype.InstructionLevel)
-                    Instructions.Add(new Instruction(NewIds.Instructions.Invalid, 0));
-                else
-                    Instructions.Add(item);
+                    item = Instruction.Invalid(Context);
             }
         }
 
@@ -120,11 +116,7 @@ namespace ProgramableNetwork
         {
             foreach (var item in Instructions)
             {
-                item.Context = Context;
-                foreach (var input in item.Inputs)
-                {
-                    input.Context = Context;
-                }
+                item.Recontext(Context);
             }
 
             Prototype = Context.ProtosDb.Get<ComputerProto>(m_protoId).ValueOrThrow("Invalid computer proto");
@@ -152,29 +144,18 @@ namespace ProgramableNetwork
             base.DeserializeData(reader);
             m_protoId = new Mafi.Core.Entities.Static.StaticEntityProto.ID(reader.ReadString());
             int version = reader.ReadInt();
-            if (version != SerializerVersion)
-            {
-                // todo handle update
-            }
-            else
-            {
-                CurrentInstruction = 0;
 
-                this.Instructions = new List<Instruction>();
-                int countOfInstructions = reader.ReadInt();
-                for (int i = 0; i < countOfInstructions; i++)
-                {
-                    if (Instruction.Deserialize(reader, out Instruction instruction))
-                    {
-                        this.Instructions.Add(instruction);
-                    }
-                    else
-                    {
-                        this.Instructions.Add(new Instruction(NewIds.Instructions.Invalid, 0));
-                    }
-                }
-            }
+            CurrentInstruction = 0;
 
+            this.Instructions = new List<Instruction>();
+            int countOfInstructions = reader.ReadInt();
+            for (int i = 0; i < countOfInstructions; i++)
+            {
+                if (Instruction.Deserialize(reader, out Instruction instruction))
+                    this.Instructions.Add(instruction);
+                else
+                    this.Instructions.Add(Instruction.Invalid());
+            }
             ErrorMessage = reader.ReadString();
 
             reader.RegisterInitAfterLoad(this, "initContexts", InitPriority.Normal);
@@ -286,6 +267,8 @@ namespace ProgramableNetwork
                 {
                     instruction.SetError(e.Message);
                     ErrorMessage = $"{instructionIndex:D3}: {e.Message.Value}";
+                    Log.Debug($"{ModDefinition.ModName}: {e.Message}");
+                    Log.Debug(e.StackTrace);
                     SetPaused(true);
                     goto finished;
                 }

@@ -18,14 +18,17 @@ namespace ProgramableNetwork
             public static readonly LocStr1 EmptyInput = Loc.Str1("ProgramableNetwork_EmptyInput",
                 "Input '{0}' is not set", "");
 
-            public static readonly LocStr2 EmptyInputIndexed = Loc.Str2("ProgramableNetwork_EmptyInput",
+            public static readonly LocStr2 EmptyInputIndexed = Loc.Str2("ProgramableNetwork_EmptyInputIndexed",
                 "Input '{0}' at index '{1}' is not set", "");
 
-            public static readonly LocStr2 TypeOr = Loc.Str2("ProgramableNetwork_EmptyInput",
+            public static readonly LocStr2 TypeOr = Loc.Str2("ProgramableNetwork_TypeOr",
                 "{0}' or '{1}", "used in empty example argument");
 
             public static readonly LocStr CanNotPause = Loc.Str("ProgramableNetwork_CanNotPause",
                 "Selected entity can not be paused", "");
+
+            public static readonly LocStr HasNoStorage = Loc.Str("ProgramableNetwork_HasNoStorage",
+                "Selected entity has no storage", "");
 
             public static readonly LocStr WatchDogStop = Loc.Str("ProgramableNetwork_WatchDogStop",
                 "Instruction exceeded processable time", "");
@@ -51,26 +54,14 @@ namespace ProgramableNetwork
             public static readonly Dictionary<InstructionProto.InputType, LocStr> PointerTypes
                 = new Dictionary<InstructionProto.InputType, LocStr>()
                 {
-                    { InstructionProto.InputType.None,               Loc.Str("ProgramableNetwork_None"         , "None", "") },
-                    { InstructionProto.InputType.Any,                Loc.Str("ProgramableNetwork_Any"          , "Any", "") },
-                    { InstructionProto.InputType.Variable,           Loc.Str("ProgramableNetwork_Variable"     , "Variable", "") },
-                    { InstructionProto.InputType.Instruction,        Loc.Str("ProgramableNetwork_Instruction"  , "Instruction", "") },
-                    { InstructionProto.InputType.Values,             Loc.Str("ProgramableNetwork_Values"       , "Values", "") },
-                    { InstructionProto.InputType.ValuesGroup,        Loc.Str("ProgramableNetwork_ValuesGroup"  , "Values", "") },
-                    { InstructionProto.InputType.Boolean,            Loc.Str("ProgramableNetwork_Boolean"      , "Boolean", "") },
-                    { InstructionProto.InputType.Integer,            Loc.Str("ProgramableNetwork_Integer"      , "Integer", "") },
-                    { InstructionProto.InputType.Entity,             Loc.Str("ProgramableNetwork_Entity"       , "Entity", "") },
-                    { InstructionProto.InputType.EntityGroup,        Loc.Str("ProgramableNetwork_Entity"       , "Entity", "") },
-                    { InstructionProto.InputType.StaticEntity,       Loc.Str("ProgramableNetwork_StaticEntity" , "Static entity (building)", "") },
-                    { InstructionProto.InputType.StaticEntityGroup,  Loc.Str("ProgramableNetwork_StaticEntity" , "Static entity (building)", "") },
-                    { InstructionProto.InputType.Machine,            Loc.Str("ProgramableNetwork_Machine"      , "Machine", "") },
-                    { InstructionProto.InputType.Settlement,         Loc.Str("ProgramableNetwork_Settlement"   , "Settlement", "") },
-                    { InstructionProto.InputType.DynamicEntity,      Loc.Str("ProgramableNetwork_DynamicEntity", "Moving entity", "") },
-                    { InstructionProto.InputType.DynamicEntityGroup, Loc.Str("ProgramableNetwork_DynamicEntity", "Moving entity", "") },
-                    { InstructionProto.InputType.Vehicle,            Loc.Str("ProgramableNetwork_Vehicle"      , "Vehicle", "") },
-                    { InstructionProto.InputType.VehicleGroup,       Loc.Str("ProgramableNetwork_Vehicle"      , "Vehicle", "") },
-                    { InstructionProto.InputType.Truck,              Loc.Str("ProgramableNetwork_Truck"        , "Truck", "") },
-                    { InstructionProto.InputType.Excavator,          Loc.Str("ProgramableNetwork_Excavator"    , "Excavator", "") },
+                    { InstructionProto.InputType.None,               Loc.Str("ProgramableNetwork_PointerType_None"         , "None", "") },
+                    { InstructionProto.InputType.Any,                Loc.Str("ProgramableNetwork_PointerType_Any"          , "Any", "") },
+                    { InstructionProto.InputType.Variable,           Loc.Str("ProgramableNetwork_PointerType_Variable"     , "Variable", "") },
+                    { InstructionProto.InputType.Instruction,        Loc.Str("ProgramableNetwork_PointerType_Instruction"  , "Instruction", "") },
+                    { InstructionProto.InputType.Boolean,            Loc.Str("ProgramableNetwork_PointerType_Boolean"      , "Boolean", "") },
+                    { InstructionProto.InputType.Integer,            Loc.Str("ProgramableNetwork_PointerType_Integer"      , "Integer", "") },
+                    { InstructionProto.InputType.Entity,             Loc.Str("ProgramableNetwork_PointerType_Entity"       , "Entity", "") },
+                    { InstructionProto.InputType.Product,            Loc.Str("ProgramableNetwork_PointerType_Product"      , "Product", "") },
 
                 };
 
@@ -87,7 +78,7 @@ namespace ProgramableNetwork
                     "Remove", "");
                 public static readonly LocStr Add = Loc.Str("ProgramableNetwork_Tool_Add",
                     "Add", "");
-                public static readonly LocStr Copy = Loc.Str("ProgramableNetwork_Tool_Add",
+                public static readonly LocStr Copy = Loc.Str("ProgramableNetwork_Tool_Copy",
                     "Copy", "");
                 public static readonly LocStr Paste = Loc.Str("ProgramableNetwork_Tool_Paste",
                     "Paste", "");
@@ -97,6 +88,8 @@ namespace ProgramableNetwork
                     "Down", "");
                 public static readonly LocStr Pick = Loc.Str("ProgramableNetwork_Tool_Pick",
                     "Pick", "");
+                public static readonly LocStr Apply = Loc.Str("ProgramableNetwork_Tool_Apply",
+                    "Apply", "");
             }
         }
     }
@@ -105,6 +98,7 @@ namespace ProgramableNetwork
     {
         private MemoryPointer[] m_inputs;
         private MemoryPointer[] m_variables;
+        private MemoryPointer[] m_displays;
         private EntityContext m_context;
 
         public Program(Computer computer)
@@ -114,7 +108,7 @@ namespace ProgramableNetwork
             for (int i = 0; i < computer.Prototype.Variables; i++)
             {
                 m_variables[i] = new MemoryPointer();
-                m_variables[i].Context = computer.Context;
+                m_variables[i].Recontext(computer.Context);
             }
         }
 
@@ -153,6 +147,44 @@ namespace ProgramableNetwork
 
         public InputRef Input => new InputRef(this);
 
+        public class DisplayRef
+        {
+            private readonly Program program;
+
+            public DisplayRef(Program program)
+            {
+                this.program = program;
+            }
+
+            public MemoryPointer this[int index]
+            {
+                set => program.SetDisplay(index, value);
+                //get => program.GetDisplay(index);
+            }
+        }
+
+        public void SetDisplay(int index, MemoryPointer value)
+        {
+            if (index < 0 || index >= m_displays.Length)
+                throw new ProgramException(NewIds.Texts.IndexOutOfRange.Format(
+                    index.ToString(), m_displays.Length.ToString()
+                    ));
+
+            m_displays[index].Assign(value);
+        }
+
+        public MemoryPointer GetDisplay(int index)
+        {
+            if (index < 0 || index >= m_displays.Length)
+                throw new ProgramException(NewIds.Texts.IndexOutOfRange.Format(
+                    index.ToString(), m_displays.Length.ToString()
+                    ));
+
+            return m_displays[index];
+        }
+
+        public DisplayRef Display => new DisplayRef(this);
+
         public long? ContinueInstruction { get; private set; }
 
         public MemoryPointer GetInput(int index)
@@ -163,7 +195,7 @@ namespace ProgramableNetwork
                     ));
 
             if (m_inputs[index].Context == null)
-                m_inputs[index].Context = m_context;
+                m_inputs[index].Recontext(m_context);
             return m_inputs[index];
         }
 
@@ -203,6 +235,11 @@ namespace ProgramableNetwork
         internal void SetInputs(MemoryPointer[] inputs)
         {
             this.m_inputs = inputs;
+        }
+
+        internal void SetDisplays(MemoryPointer[] displays)
+        {
+            this.m_displays = displays;
         }
 
         internal void SetVariables(MemoryPointer[] variables)

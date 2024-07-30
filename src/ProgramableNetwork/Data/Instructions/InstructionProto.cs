@@ -1,6 +1,7 @@
 ﻿
 using Mafi;
 using Mafi.Core.Entities;
+using Mafi.Core.Products;
 using Mafi.Core.Prototypes;
 using Mafi.Serialization;
 using Mafi.Unity.UiFramework.Components;
@@ -111,8 +112,11 @@ namespace ProgramableNetwork
         public int InstructionCost { get; }
         public Action<Program> Runtime { get; }
         public InstructionInput[] Inputs { get; }
-        public Action<UiBuilder, StackContainer> CustomUI { get; }
+        public Proto.Str[] Displays { get; }
+        public Action<UiData> CustomUI { get; }
         public Func<Entity, bool> EntityFilter { get; }
+        public Fix32 EntitySearchDistance { get; set; }
+        public Func<ProductProto, bool> ProductFilter { get; }
 
         [Flags]
         public enum InputType : uint {
@@ -125,42 +129,39 @@ namespace ProgramableNetwork
             // anything that is not a variable
             Any = 0xEFFFFFFF,
             // variable type - masking
+            Control = 0x10000000,
             Variable = 0x10000001,
             Instruction = 0x10000002,
             // values
-            Values = 0x20000000,
-            ValuesGroup = 0x2FFFFFFF,
+            Value = 0x20000000,
             Boolean = 0x20000002,
             Integer = 0x20000003,
             // entities
             Entity = 0x40000000,
-            EntityGroup = 0x4FFFFFFF,
-            StaticEntity = 0x40100000,
-            StaticEntityGroup = 0x401FFFFF,
-            Machine = 0x41100001,
-            Settlement = 0x41100002,
-            DynamicEntity = 0x40200000,
-            DynamicEntityGroup = 0x402FFFFF,
-            Vehicle = 0x40210000,
-            VehicleGroup = 0x4021FFFF,
-            Truck = 0x40210001,
-            Excavator = 0x40210002,
+            Product = 0x80000000,
         }
 
         public InstructionProto(ID id, Str strings,
             Action<Program> runtime,
-            Action<UiBuilder, StackContainer> customUI = null,
+            Action<UiData> customUI = null,
             Func<Entity, bool> entityFilter = null,
+            Fix32? entitySearchDistance = null,
+            Func<ProductProto, bool> productFilter = null,
             IEnumerable<Tag> tags = null,
-            InstructionInput[] inputs = null, int instructionLevel = 1, int instructionCost = 1) : base(id, strings, tags)
+            InstructionInput[] inputs = null,
+            Proto.Str[] displays = null,
+            int instructionLevel = 1, int instructionCost = 1) : base(id, strings, tags)
         {
             this.Id = id;
             this.InstructionLevel = instructionLevel;
             this.InstructionCost = instructionCost;
             this.Runtime = runtime;
             this.Inputs = inputs ?? new InstructionInput[0];
-            this.CustomUI = customUI ?? ((builder, container) => { });
+            this.Displays = displays ?? new Proto.Str[0];
+            this.CustomUI = customUI ?? ((_) => { });
             this.EntityFilter = entityFilter ?? (entity => true);
+            this.EntitySearchDistance = entitySearchDistance ?? 10.ToFix32();
+            this.ProductFilter = productFilter ?? (entity => true);
         }
     }
 
@@ -190,10 +191,11 @@ namespace ProgramableNetwork
 
         public static int GetInstructionCost(this InstructionProto.InputType type)
         {
-            return ((type & InstructionProto.InputType.DynamicEntityGroup) != 0) ? 2 :
-                   ((type & InstructionProto.InputType.StaticEntityGroup) != 0) ? 1 :
-                   ((type & InstructionProto.InputType.EntityGroup) != 0) ? 1 :
-                   ((type & InstructionProto.InputType.ValuesGroup) != 0) ? 1 : 0;
+            return type.HasFlag(InstructionProto.InputType.Control) ? 0 :
+                   type.HasFlag(InstructionProto.InputType.Value) ? 1 : // bool or number
+                   type == InstructionProto.InputType.Entity ? 2 :
+                   type == InstructionProto.InputType.Product ? 3 :
+                   0;
         }
 
         public static bool IsGroup(this InstructionProto.InputType type, InstructionProto.InputType category)
@@ -213,7 +215,12 @@ namespace ProgramableNetwork
 
         public static Proto.Str Input(this InstructionProto.ID operation, string name, string text, string description = "")
         {
-            return Proto.CreateStr(new Proto.ID(operation.Value + "__" + name), text, description);
+            return Proto.CreateStr(new Proto.ID(operation.Value + "__input__" + name), text, description);
+        }
+
+        public static Proto.Str Display(this InstructionProto.ID operation, string name, string text, string description = "")
+        {
+            return Proto.CreateStr(new Proto.ID(operation.Value + "__display__" + name), text, description);
         }
 
         public static InstructionProto.InputType FillRightSide(this InstructionProto.InputType type)

@@ -1,11 +1,12 @@
 ﻿using Mafi.Core.Entities;
+using Mafi.Core.Products;
 using System;
 
 namespace ProgramableNetwork
 {
     public class MemoryPointer
     {
-        public EntityContext Context { get; set; }
+        public EntityContext Context { get; private set; }
 
         public InstructionProto.InputType Type { get; set; }
         public bool IsNull => Type == InstructionProto.InputType.None;
@@ -39,8 +40,23 @@ namespace ProgramableNetwork
                 Data = value.Data;
             }
         }
-        public long Instruction { get => Data; set => Data = value; }
+        public ProductProto Product {
+            get => Context.ProtosDb.Get<ProductProto>(new Mafi.Core.Prototypes.Proto.ID(SData)).Value;
+            set {
+                Type = InstructionProto.InputType.Product;
+                SData = value.Id.Value;
+            }
+        }
+
+        public long Instruction {
+            get => Data;
+            set {
+                Type = InstructionProto.InputType.Instruction;
+                Data = value;
+            }
+        }
         public long Data { get; set; }
+        public string SData { get; set; }
 
         public MemoryPointer()
         {
@@ -54,6 +70,7 @@ namespace ProgramableNetwork
                 Context = Context,
                 Type = Type,
                 Data = Data,
+                SData = SData,
             };
         }
 
@@ -61,6 +78,12 @@ namespace ProgramableNetwork
         {
             this.Type = value.Type;
             this.Data = value.Data;
+            this.SData = value.SData;
+        }
+
+        public void Recontext(EntityContext context)
+        {
+            Context = context;
         }
 
         public static implicit operator int(MemoryPointer pointer)
@@ -98,6 +121,16 @@ namespace ProgramableNetwork
                         NewIds.Texts.PointerTypes[pointer.Type]
                     ));
             return pointer.Boolean;
+        }
+
+        public static implicit operator ProductProto(MemoryPointer pointer)
+        {
+            if (pointer.Type != InstructionProto.InputType.Product)
+                throw new ProgramException(NewIds.Texts.InvalidPointerType.Format(
+                        NewIds.Texts.PointerTypes[InstructionProto.InputType.Product],
+                        NewIds.Texts.PointerTypes[pointer.Type]
+                    ));
+            return pointer.Product;
         }
     }
 }

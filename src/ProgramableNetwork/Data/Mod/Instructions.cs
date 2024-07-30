@@ -1,4 +1,10 @@
-﻿using Mafi.Core.Mods;
+﻿using Mafi.Core.Buildings.Storages;
+using Mafi.Core.Entities;
+using Mafi.Core.Factory.Transports;
+using Mafi.Core.Mods;
+using Mafi.Unity.UiFramework;
+using Mafi.Unity.UiFramework.Components;
+using System;
 
 namespace ProgramableNetwork
 {
@@ -9,6 +15,7 @@ namespace ProgramableNetwork
             public partial class Get
             {
                 public static readonly InstructionProto.ID Pause = new InstructionProto.ID("ProgramableNetwork_Operation_Get_Pause");
+                public static readonly InstructionProto.ID Capacity = new InstructionProto.ID("ProgramableNetwork_Operation_Get_Capacity");
             }
 
             public partial class Set
@@ -20,6 +27,7 @@ namespace ProgramableNetwork
             public static readonly InstructionProto.ID Goto = new InstructionProto.ID("ProgramableNetwork_Operation_Goto");
             public static readonly InstructionProto.ID Nop = new InstructionProto.ID("ProgramableNetwork_Operation_Nop");
             public static readonly InstructionProto.ID Invalid = new InstructionProto.ID("ProgramableNetwork_Operation_Invalid");
+            public static readonly InstructionProto.ID Display = new InstructionProto.ID("ProgramableNetwork_Operation_Display");
         }
     }
 
@@ -104,6 +112,37 @@ namespace ProgramableNetwork
                 {
                     if (program.Input[0, InstructionProto.InputType.Boolean])
                         program.NextInstruction(program.Input[1, InstructionProto.InputType.Instruction]);
+                })
+                .BuildAndAdd();
+
+            registrator
+                .OperationProtoBuilder(NewIds.Instructions.Get.Capacity, "Get (capacity)")
+                .Description("Returns storage limit of selected entity")
+                .AddInput("storage", "Storage", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
+                .AddInput("value", "Read to", InstructionProto.InputType.Variable)
+                .EntityFilter(entity => entity is StorageBase || entity is Transport)
+                .Runtime((program) =>
+                {
+                    var building = program.Input[0, InstructionProto.InputType.Entity].Entity;
+                    var variable = program.Input[1, InstructionProto.InputType.Variable];
+
+                    if (building is StorageBase storage)
+                        program.Variable[variable].Integer = storage.Capacity.Value;
+                    else if (building is Transport transport)
+                        program.Variable[variable].Integer = transport.Trajectory.MaxProducts;
+                    else
+                        throw new ProgramException(NewIds.Texts.HasNoStorage);
+                })
+                .BuildAndAdd();
+
+            registrator
+                .OperationProtoBuilder(NewIds.Instructions.Display, "Display")
+                .Description("Displays content of variable")
+                .AddInput("variable", "Varible", InstructionProto.InputType.Variable)
+                .AddDisplay("value", "Value")
+                .Runtime((program) =>
+                {
+                    program.Display[0] = program.Variable[program.Input[0, InstructionProto.InputType.Variable]];
                 })
                 .BuildAndAdd();
         }
