@@ -41,7 +41,7 @@ namespace ProgramableNetwork
             }
         }
         public ProductProto Product {
-            get => Context.ProtosDb.Get<ProductProto>(new Mafi.Core.Prototypes.Proto.ID(SData)).Value;
+            get => Context.ProtosDb.Get<ProductProto>(new Mafi.Core.Prototypes.Proto.ID(SData)).ValueOrNull;
             set {
                 Type = InstructionProto.InputType.Product;
                 SData = value.Id.Value;

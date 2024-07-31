@@ -28,8 +28,8 @@ namespace ProgramableNetwork
 				//.AddLayoutEntityToUnlock(NewIds.Computers.Database)
 				.BuildAndAdd();
 			
-			nodeProto.GridPosition = new Vector2i(32, 1);
-			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.BasicComputing));
+			nodeProto.GridPosition = new Vector2i(36, 15);
+			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.ResearchLab2));
 		}
 
 	}

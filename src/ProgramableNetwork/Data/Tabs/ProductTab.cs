@@ -68,13 +68,19 @@ namespace ProgramableNetwork
             {
                 m_produckPicker = new ProductPicker(this);
                 m_window.SetupInnerWindowWithButton(m_produckPicker, m_btnPreviewHolder, m_btnPreview, () => {
-                    m_btnPreviewHolder.ClearAndDestroyAll();
-                    m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
-                        .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                        .SetSize(40, 40)
-                        .SetIcon(m_builder.Style.Icons.Empty)
-                        .OnClick(FindProduct)
-                        .AppendTo(m_btnPreviewHolder);
+                    try {
+                        m_btnPreviewHolder.ClearAndDestroyAll();
+                        m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
+                            .SetButtonStyle(m_builder.Style.Global.ImageBtn)
+                            .SetSize(40, 40)
+                            .SetIcon(m_builder.Style.Icons.Empty)
+                            .OnClick(FindProduct)
+                            .AppendTo(m_btnPreviewHolder);
+                    }
+                    catch (Exception)
+                    {
+                        // gui issue
+                    }
                 }, () => { });
                 m_window.OnHide += m_produckPicker.Hide;
             }

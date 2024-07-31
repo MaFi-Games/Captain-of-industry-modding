@@ -161,7 +161,7 @@ namespace ProgramableNetwork
         }
 
         private static readonly int SerializerVersion = 0;
-        public void SerializeData(BlobWriter writer)
+        public void SerializeData(BlobWriter writer, bool clearEntities = false)
         {
             writer.WriteString(Prototype.Id.Value);
             writer.WriteLong(UniqueId);
@@ -170,17 +170,35 @@ namespace ProgramableNetwork
             writer.WriteInt(m_inputs.Length);
             foreach (var input in m_inputs)
             {
-                writer.WriteUInt((uint)input.Type);
-                writer.WriteLong(input.Data);
-                writer.WriteString(input.SData ?? "");
+                if (input.Type == InstructionProto.InputType.Entity)
+                {
+                    writer.WriteUInt((uint)InstructionProto.InputType.None);
+                    writer.WriteLong(0);
+                    writer.WriteString("");
+                }
+                else
+                {
+                    writer.WriteUInt((uint)input.Type);
+                    writer.WriteLong(input.Data);
+                    writer.WriteString(input.SData ?? "");
+                }
             }
 
             writer.WriteInt(m_displays.Length);
             foreach (var display in m_displays)
             {
-                writer.WriteUInt((uint)display.Type);
-                writer.WriteLong(display.Data);
-                writer.WriteString(display.SData ?? "");
+                if (display.Type == InstructionProto.InputType.Entity)
+                {
+                    writer.WriteUInt((uint)InstructionProto.InputType.None);
+                    writer.WriteLong(0);
+                    writer.WriteString("");
+                }
+                else
+                {
+                    writer.WriteUInt((uint)display.Type);
+                    writer.WriteLong(display.Data);
+                    writer.WriteString(display.SData ?? "");
+                }
             }
         }
 

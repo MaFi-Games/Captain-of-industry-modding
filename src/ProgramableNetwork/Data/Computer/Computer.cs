@@ -65,7 +65,7 @@ namespace ProgramableNetwork
 
         public void AddToConfig(EntityConfigData data)
         {
-            data.SetArray<Instruction>("instructions", Instructions.ToImmutableArray(), (i, w) => i.SerializeData(w));
+            data.SetArray<Instruction>("instructions", Instructions.ToImmutableArray(), (i, w) => i.SerializeData(w, true));
         }
 
         public void ApplyConfig(EntityConfigData data)
@@ -82,6 +82,8 @@ namespace ProgramableNetwork
 
                 if (item.Prototype.InstructionLevel > Prototype.InstructionLevel)
                     item = Instruction.Invalid(Context);
+
+                Instructions.Add(item);
             }
         }
 

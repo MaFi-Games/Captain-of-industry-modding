@@ -135,7 +135,7 @@ namespace ProgramableNetwork
             // values
             Value = 0x20000000,
             Boolean = 0x20000002,
-            Integer = 0x20000003,
+            Integer = 0x20000004,
             // entities
             Entity = 0x40000000,
             Product = 0x80000000,

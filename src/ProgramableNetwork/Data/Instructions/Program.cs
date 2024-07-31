@@ -51,6 +51,9 @@ namespace ProgramableNetwork
             public static readonly LocStr False = Loc.Str("ProgramableNetwork_False",
                 "False", "");
 
+            public static readonly LocStr DivisionByZero = Loc.Str("ProgramableNetwork_DivisionByZero",
+                "Division by zero", "This may happen during operation: A / B");
+
             public static readonly Dictionary<InstructionProto.InputType, LocStr> PointerTypes
                 = new Dictionary<InstructionProto.InputType, LocStr>()
                 {
