@@ -64,6 +64,34 @@ namespace ProgramableNetwork
                     m_setting = false;
                 });
             }
+
+            var btnEnd = Builder
+                .NewToggleBtn("item-" + instructions.Count + "_" + DateTime.Now.Ticks)
+                .SetText(NewIds.Texts.End.TranslatedString)
+                .SetSize(30, 20)
+                .SetButtonStyleWhenOn(Style.Global.GeneralBtnActive)
+                .SetButtonStyleWhenOff(Style.Global.GeneralBtnToToggle)
+                .AppendTo(this);
+
+            allButton.Add(btnEnd);
+
+            btnEnd.SetIsOn(m_input.Type == InstructionProto.InputType.Instruction && m_input.Instruction == 0);
+
+            btnEnd.SetOnToggleAction(active =>
+            {
+                if (m_setting) return;
+                m_setting = true;
+                if (active)
+                {
+                    foreach (var otherBtn in allButton)
+                        otherBtn.SetIsOn(otherBtn == btnEnd);
+
+                    m_input.Type = InstructionProto.InputType.Instruction;
+                    m_input.Instruction = 0;
+                    refresh();
+                }
+                m_setting = false;
+            });
         }
 
         public void Refresh()

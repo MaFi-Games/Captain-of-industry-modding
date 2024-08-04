@@ -57,7 +57,7 @@ namespace ProgramableNetwork
                     initButton(uiData.Input.Entity.GetIcon(),
                         () =>
                         {
-                            if (uiData.Input.Entity.HasPosition(out var position))
+                            if (uiData.Input.Entity.HasPosition(out Tile2f position))
                                 uiData.Context.CameraController.PanTo(position);
                         },
                         () =>

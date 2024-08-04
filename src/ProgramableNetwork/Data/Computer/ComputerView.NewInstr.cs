@@ -80,7 +80,7 @@ namespace ProgramableNetwork
         {
             m_controller.SelectedEntity.Instructions.Add(new Instruction(
                 availableInstructions[typeNames[pick.Value]],
-                m_controller.SelectedEntity.Context
+                Entity
             ));
             m_repaintInstructions = true;
         }

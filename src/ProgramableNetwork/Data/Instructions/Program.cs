@@ -51,6 +51,9 @@ namespace ProgramableNetwork
             public static readonly LocStr False = Loc.Str("ProgramableNetwork_False",
                 "False", "");
 
+            public static readonly LocStr End = Loc.Str("ProgramableNetwork_End",
+                "End", "");
+
             public static readonly LocStr DivisionByZero = Loc.Str("ProgramableNetwork_DivisionByZero",
                 "Division by zero", "This may happen during operation: A / B");
 
@@ -93,25 +96,27 @@ namespace ProgramableNetwork
                     "Pick", "");
                 public static readonly LocStr Apply = Loc.Str("ProgramableNetwork_Tool_Apply",
                     "Apply", "");
+                public static readonly LocStr Edit = Loc.Str("ProgramableNetwork_Tool_Edit",
+                    "Edit", "");
             }
         }
     }
 
     public class Program
     {
+        private readonly Computer m_computer;
         private MemoryPointer[] m_inputs;
         private MemoryPointer[] m_variables;
         private MemoryPointer[] m_displays;
-        private EntityContext m_context;
 
         public Program(Computer computer)
         {
+            m_computer = computer;
             m_variables = new MemoryPointer[computer.Prototype.Variables];
-            m_context = computer.Context;
             for (int i = 0; i < computer.Prototype.Variables; i++)
             {
                 m_variables[i] = new MemoryPointer();
-                m_variables[i].Recontext(computer.Context);
+                m_variables[i].Recontext(computer);
             }
         }
 
@@ -188,7 +193,7 @@ namespace ProgramableNetwork
 
         public DisplayRef Display => new DisplayRef(this);
 
-        public long? ContinueInstruction { get; private set; }
+        public long? ContinueInstruction { get; set; }
 
         public MemoryPointer GetInput(int index)
         {
@@ -198,7 +203,7 @@ namespace ProgramableNetwork
                     ));
 
             if (m_inputs[index].Context == null)
-                m_inputs[index].Recontext(m_context);
+                m_inputs[index].Recontext(m_computer);
             return m_inputs[index];
         }
 

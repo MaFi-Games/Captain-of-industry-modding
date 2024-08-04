@@ -222,7 +222,7 @@ namespace ProgramableNetwork
                 .BuildAndAdd();
 
             registrator
-                .AritmeticOperationProtoBuilder(NewIds.Instructions.Arithmetic.Div, "Arithmetic (a x b)", (a, b) =>
+                .AritmeticOperationProtoBuilder(NewIds.Instructions.Arithmetic.Div, "Arithmetic (a / b)", (a, b) =>
                 {
                     if (b == 0)
                         throw new ProgramException(NewIds.Texts.DivisionByZero);

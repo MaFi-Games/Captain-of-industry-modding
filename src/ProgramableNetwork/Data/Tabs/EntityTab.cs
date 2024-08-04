@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Dynamic;
+using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Products;
 using Mafi.Unity;
 using Mafi.Unity.InputControl.Inspectors;
@@ -263,6 +264,7 @@ namespace ProgramableNetwork
                             () =>
                             {
                                 m_entityTab.m_input.Entity = entity;
+                                m_entityTab.m_input.SData = entity.SerializationInfo(m_entityTab.m_computer);
                                 m_entityTab.m_entityPicker.Hide();
                                 m_entityTab.m_refresh();
                             })

@@ -18,9 +18,9 @@ namespace ProgramableNetwork
             return new Lyst<T>() { option.ValueOrNull }.ToImmutableArray();
         }
 
-        public static T AppendTo<T>(this T element, StackContainer stackContainer) where T : IUiElement
+        public static T AppendTo<T>(this T element, StackContainer stackContainer, ContainerPosition? containerPosition) where T : IUiElement
         {
-            stackContainer.Append(element, element.GetSize(), default, default, false);
+            stackContainer.Append(element, element.GetSize(), containerPosition, default, false);
             return element;
         }
 
@@ -50,6 +50,24 @@ namespace ProgramableNetwork
                 return new IconsPaths().Empty;
         }
 
+        public static bool HasPosition(this IEntity entity, out Tile3f position)
+        {
+            if (entity is IEntityWithPosition positioned)
+            {
+                position = positioned.Position3f;
+                return true;
+            }
+
+            if (entity is DynamicGroundEntity dynamic)
+            {
+                position = dynamic.Position3f;
+                return true;
+            }
+
+            position = Tile3f.Zero;
+            return false;
+        }
+
         public static bool HasPosition(this IEntity entity, out Tile2f position)
         {
             if (entity is IEntityWithPosition positioned)
@@ -66,6 +84,15 @@ namespace ProgramableNetwork
 
             position = Tile2f.Zero;
             return false;
+        }
+
+        public static string SerializationInfo(this IEntity entity, Computer computer)
+        {
+            if (!entity.HasPosition(out Tile3f position))
+                return "";
+
+            RelTile3f offset = position - computer.Position3f;
+            return $"{entity.Prototype.Id.Value}:{offset}";
         }
     }
 }

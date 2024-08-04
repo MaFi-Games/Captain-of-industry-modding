@@ -78,10 +78,11 @@ namespace ProgramableNetwork
             foreach (var itemf in instructions)
             {
                 var item = itemf;
-                item.Recontext(Context);
+                item.Recontext(this);
+                item.ValidateEntities(this);
 
                 if (item.Prototype.InstructionLevel > Prototype.InstructionLevel)
-                    item = Instruction.Invalid(Context);
+                    item = Instruction.Invalid(this);
 
                 Instructions.Add(item);
             }
@@ -109,20 +110,16 @@ namespace ProgramableNetwork
         [DoNotSave(0, null)]
         private Program m_program;
 
-        [DoNotSave(0, null)]
-        public int UsableTime { get; private set; }
-
         [InitAfterLoad(InitPriority.Normal)]
         [OnlyForSaveCompatibility(null)]
         private void initContexts(int saveVersion)
         {
             foreach (var item in Instructions)
             {
-                item.Recontext(Context);
+                item.Recontext(this);
             }
 
             Prototype = Context.ProtosDb.Get<ComputerProto>(m_protoId).ValueOrThrow("Invalid computer proto");
-            m_unityConsumer = Context.UnityConsumerFactory.CreateConsumer(this);
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
         }
 
@@ -164,10 +161,10 @@ namespace ProgramableNetwork
         }
 
         [DoNotSave(0, null)]
-        public Upoints MonthlyUnityConsumed => Prototype.BoostCost ?? 0.Upoints();
+        public Upoints MonthlyUnityConsumed => 0.Upoints();
 
         [DoNotSave(0, null)]
-        public Upoints MaxMonthlyUnityConsumed => Prototype.BoostCost ?? 0.Upoints();
+        public Upoints MaxMonthlyUnityConsumed => 0.Upoints();
 
         public Proto.ID UpointsCategoryId => IdsCore.UpointsCategories.Boost;
 
@@ -192,19 +189,16 @@ namespace ProgramableNetwork
         [DoNotSave(0, null)]
         public string ErrorMessage { get; private set; }
 
+        [DoNotSave(0, null)]
+        public bool IsDebug { get; private set; }
+
+        [DoNotSave(0, null)]
+        public bool WaitForUser { get; private set; }
+
         public void SimUpdate()
         {
-            if (IsNotEnabled)
+            if (IsNotEnabled && IsNotPaused)
             {
-                CurrentInstruction = 0;
-                PowerRequired = Prototype.IddlePower;
-                m_program = null;
-                return;
-            }
-
-            if (Instructions.Count == 0)
-            {
-                SetPaused(true);
                 return;
             }
 
@@ -213,56 +207,60 @@ namespace ProgramableNetwork
                 return;
             }
 
-            bool boostable = Prototype.BoostCost != null;
-            bool hasEgnoutUnity = UnityConsumer.Value != null ? !UnityConsumer.Value.NotEnoughUnity : false;
-            if (boostable && hasEgnoutUnity)
-            {
-                UsableTime = Prototype.UsableTime * 2;
-            }
-            else
-            {
-                UsableTime = Prototype.UsableTime;
-            }
-
-            int restTime = UsableTime;
-            if (!CanWorkOvertime)
+            if (Instructions.Count == 0)
             {
                 CurrentInstruction = 0;
+                PowerRequired = Prototype.IddlePower;
+                m_program = null;
+                return;
             }
 
-            while(CurrentInstruction < Instructions.Count)
-            {
-                int instructionIndex = CurrentInstruction;
-                m_program = m_program ?? new Program(this);
-                var instruction = Instructions[CurrentInstruction];
+            int instructionIndex = CurrentInstruction;
+            m_program = m_program ?? new Program(this);
+            var instruction = Instructions[CurrentInstruction];
 
+            if (!WaitForUser)
+            {
                 try
                 {
-                    if (!CanWorkOvertime && instruction.GetLength() > restTime)
+                    if (instruction.GetLength() > Prototype.UsableTime)
                     {
-                        instruction.SetError(NewIds.Texts.WatchDogStop);
                         SetPaused(true);
+                        instruction.SetError(NewIds.Texts.WatchDogStop);
                         return;
-                    }
-                    if (instruction.GetLength() > restTime)
-                    {
-                        goto finished;
                     }
 
                     instruction.Run(m_program);
-                    restTime -= instruction.GetLength();
 
                     ErrorMessage = "";
                     if (m_program.ContinueInstruction != null)
                     {
-                        for (int i = 0; i < Instructions.Count; i++)
+                        if (m_program.ContinueInstruction == 0)
                         {
-                            if (m_program.ContinueInstruction == Instructions[i].UniqueId)
+                            m_program.ContinueInstruction = null;
+                            CurrentInstruction = Instructions.Count;
+                        }
+                        else
+                        {
+                            for (int i = 0; i < Instructions.Count; i++)
                             {
-                                CurrentInstruction = i;
-                                goto outer;
+                                if (m_program.ContinueInstruction == Instructions[i].UniqueId)
+                                {
+                                    m_program.ContinueInstruction = null;
+                                    CurrentInstruction = i;
+                                    break;
+                                }
+                            }
+
+                            if (m_program.ContinueInstruction != null)
+                            {
+                                throw new ProgramException(NewIds.Texts.InvalidInstruction);
                             }
                         }
+                    }
+                    else
+                    {
+                        CurrentInstruction++;
                     }
                 }
                 catch (ProgramException e)
@@ -272,7 +270,6 @@ namespace ProgramableNetwork
                     Log.Debug($"{ModDefinition.ModName}: {e.Message}");
                     Log.Debug(e.StackTrace);
                     SetPaused(true);
-                    goto finished;
                 }
                 catch (Exception e)
                 {
@@ -281,17 +278,26 @@ namespace ProgramableNetwork
                     Log.Exception(e);
                     ErrorMessage = $"{instructionIndex:D3}: {e.Message}";
                     SetPaused(true);
-                    goto finished;
                 }
-                outer: CurrentInstruction++;
             }
-            finished: if (CurrentInstruction == Instructions.Count)
+
+            if (CurrentInstruction == Instructions.Count)
                 CurrentInstruction = 0;
 
             PowerRequired = 
                 Prototype.IddlePower +
                 Prototype.WorkingPower
-                .ScaledBy((100 - 100.0 * restTime / UsableTime).Percent());
+                .ScaledBy((100 - 100.0 * instruction.GetLength() / Prototype.UsableTime).Percent());
+
+            if (IsDebug && !WaitForUser)
+            {
+                WaitForUser = true;
+            }
+
+            if (!IsDebug && WaitForUser)
+            {
+                WaitForUser = false;
+            }
 
         }
     }

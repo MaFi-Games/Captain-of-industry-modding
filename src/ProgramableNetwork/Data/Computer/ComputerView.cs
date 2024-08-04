@@ -56,8 +56,11 @@ namespace ProgramableNetwork
                         status.SetStatusWorking();
                 });
 
+            var instructionIndex = AddStatusInfoPanel();
+            updaterBuilder.Observe(() => m_controller.SelectedEntity?.CurrentInstruction ?? 0)
+                .Do(instr => instructionIndex.SetStatus(instr.ToString(), StatusPanel.State.Ok));
+
             AddGeneralPriorityPanel(m_controller.Context, () => m_controller.SelectedEntity);
-            AddUnityCostPanel(updaterBuilder, () => m_controller.SelectedEntity);
 
             itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);
 

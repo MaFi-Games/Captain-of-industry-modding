@@ -1,6 +1,8 @@
-﻿using Mafi.Core.Entities;
+﻿using Mafi;
+using Mafi.Core.Entities;
 using Mafi.Core.Products;
 using System;
+using System.Text.RegularExpressions;
 
 namespace ProgramableNetwork
 {
@@ -81,9 +83,52 @@ namespace ProgramableNetwork
             this.SData = value.SData;
         }
 
-        public void Recontext(EntityContext context)
+        public void Recontext(Computer computer)
         {
-            Context = context;
+            Context = computer.Context;
+        }
+
+        public void ValidateEntity(Computer computer)
+        {
+            if (Data != -1 && !Context.EntitiesManager.TryGetEntity(new Mafi.Core.EntityId((int)Data), out Entity _))
+            {
+                return;
+            }
+
+            if (SData?.Length == 0)
+            {
+                this.Type = InstructionProto.InputType.None;
+                return;
+            }
+
+            try
+            {
+                Regex r = new Regex(@"^\w+:\((-?\d+(?:.\d+)?), *(-?\d+(?:.\d+)?), *(-?\d+(?:.\d+)?)\).*");
+                Match m = r.Match(this.SData);
+                Tile3f toBeFound = computer.Position3f + new RelTile3f(
+                    float.Parse(m.Groups[1].Value).ToFix32(),
+                    float.Parse(m.Groups[2].Value).ToFix32(),
+                    float.Parse(m.Groups[3].Value).ToFix32()
+                );
+
+                foreach (IEntity e in computer.Context.EntitiesManager.Entities)
+                {
+                    if (e.HasPosition(out Tile3f newPos) && newPos == toBeFound)
+                    {
+                        this.Data = e.Id.Value;
+                        return;
+                    }
+                }
+
+                // when not found
+                this.Type = InstructionProto.InputType.None;
+            }
+            catch (Exception e)
+            {
+                this.Type = InstructionProto.InputType.None;
+                Log.Error($"Cannot get entity: {SData}");
+                Log.Exception(e);
+            }
         }
 
         public static implicit operator int(MemoryPointer pointer)

@@ -6,6 +6,7 @@ using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Style;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -16,7 +17,7 @@ namespace ProgramableNetwork
         private readonly Action m_refresh;
         private readonly List<IUiElement> m_tabs;
         private readonly List<ToggleBtn> m_buttons;
-        private readonly StackContainer m_tabsHolder;
+        private readonly GridContainer m_tabsHolder;
 
         public MyTabContainer(UiBuilder builder, UiStyle style, string name, Action refresh)
             : base(builder, name)
@@ -32,11 +33,30 @@ namespace ProgramableNetwork
             SetSizeMode(SizeMode.Dynamic);
 
             this.m_tabsHolder = Builder
-                .NewStackContainer("tabs")
-                .SetStackingDirection(Direction.LeftToRight)
-                .SetSizeMode(SizeMode.Dynamic)
-                .SetHeight(20)
+                .NewGridContainer("tabs")
                 .AppendTo(this);
+
+            this.m_tabsHolder.SetDynamicHeightMode(10);
+
+            this.m_tabsHolder.SizeChanged += Item_SizeChanged;
+            Item_SizeChanged(m_tabsHolder);
+        }
+
+        private void Item_SizeChanged(IUiElement obj)
+        {
+            this.UpdateItemSize(obj, obj.GetSize());
+        }
+
+        public MyTabContainer SetTabDynamicHeight(int columnCount)
+        {
+            m_tabsHolder.SetDynamicHeightMode(columnCount);
+            return this;
+        }
+
+        public MyTabContainer SetTabCellSize(Vector2 cellSize)
+        {
+            m_tabsHolder.SetCellSize(cellSize);
+            return this;
         }
 
         public void AddTab(LocStrFormatted locStr, IUiElement tab)
@@ -73,6 +93,9 @@ namespace ProgramableNetwork
             m_tabs.Add(tab);
 
             tab.AppendTo(this);
+            if (tab is IDynamicSizeElement dyn)
+                dyn.SizeChanged += Item_SizeChanged;
+
             if (m_buttons.Count != 1)
                 this.HideItem(tab);
         }

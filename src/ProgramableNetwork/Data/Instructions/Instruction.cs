@@ -15,6 +15,7 @@ namespace ProgramableNetwork
         private readonly long uniqueId;
         private readonly MemoryPointer[] m_inputs;
         private readonly MemoryPointer[] m_displays;
+        private Computer m_computer;
         private LocStrFormatted? Error;
 
         private InstructionProto.ID m_prototypeId;
@@ -22,20 +23,18 @@ namespace ProgramableNetwork
         public InstructionProto Prototype {
             get {
                 if (m_prototype == null)
-                    m_prototype = Context.ProtosDb.Get<InstructionProto>(m_prototypeId).ValueOrThrow("Invalid instruction prototype");
+                    m_prototype = m_computer.Context.ProtosDb.Get<InstructionProto>(m_prototypeId).ValueOrThrow("Invalid instruction prototype");
                 return m_prototype;
             }
         }
 
-        public EntityContext Context { get; private set; }
-
-        public void Recontext(EntityContext context)
+        public void Recontext(Computer computer)
         {
-            Context = context;
+            m_computer = computer;
             foreach (var item in m_inputs)
-                item.Recontext(context);
+                item.Recontext(computer);
             foreach (var item in m_displays)
-                item.Recontext(context);
+                item.Recontext(computer);
         }
 
 
@@ -77,6 +76,17 @@ namespace ProgramableNetwork
                 this.m_displays[i] = displays[i].Clone();
         }
 
+        public void ValidateEntities(Computer computer)
+        {
+            foreach (MemoryPointer mp in m_inputs)
+            {
+                if (mp.Type == InstructionProto.InputType.Entity)
+                {
+                    mp.ValidateEntity(computer);
+                }
+            }
+        }
+
         /// <summary>
         /// Init constructor
         /// </summary>
@@ -92,34 +102,40 @@ namespace ProgramableNetwork
             this.m_displays = new MemoryPointer[0];
         }
 
-        public static Instruction Invalid(EntityContext context = null)
+        public static Instruction Invalid(Computer computer)
         {
             Instruction instruction = new Instruction(NewIds.Instructions.Invalid, 0);
-            if (context != null) instruction.Recontext(context);
+            instruction.Recontext(computer);
             return instruction;
+        }
+
+        public static Instruction Invalid()
+        {
+            return new Instruction(NewIds.Instructions.Invalid, 0);
         }
 
         /// <summary>
         /// Init constructor
         /// </summary>
-        public Instruction(InstructionProto operationProto, EntityContext context)
+        public Instruction(InstructionProto operationProto, Computer computer)
         {
             this.uniqueId = DateTime.UtcNow.Ticks;
             this.m_prototype = operationProto;
             this.m_prototypeId = operationProto.Id;
             this.m_inputs = new MemoryPointer[Prototype.Inputs.Length];
             this.m_displays = new MemoryPointer[Prototype.Displays.Length];
+            this.m_computer = computer;
 
             for (int i = 0; i < m_inputs.Length; i++)
             {
                 m_inputs[i] = new MemoryPointer();
-                m_inputs[i].Recontext(context);
+                m_inputs[i].Recontext(computer);
             }
 
             for (int i = 0; i < m_displays.Length; i++)
             {
                 m_displays[i] = new MemoryPointer();
-                m_displays[i].Recontext(context);
+                m_displays[i].Recontext(computer);
             }
         }
 
@@ -127,6 +143,8 @@ namespace ProgramableNetwork
 
         public MemoryPointer[] Inputs => m_inputs;
         public MemoryPointer[] Displays => m_displays;
+
+        public string Note { get; set; }
 
         public void SetError(LocStrFormatted? error)
         {
@@ -160,7 +178,7 @@ namespace ProgramableNetwork
             return a?.uniqueId != b?.uniqueId;
         }
 
-        private static readonly int SerializerVersion = 0;
+        private static readonly int SerializerVersion = 1;
         public void SerializeData(BlobWriter writer, bool clearEntities = false)
         {
             writer.WriteString(Prototype.Id.Value);
@@ -170,36 +188,24 @@ namespace ProgramableNetwork
             writer.WriteInt(m_inputs.Length);
             foreach (var input in m_inputs)
             {
-                if (input.Type == InstructionProto.InputType.Entity)
-                {
-                    writer.WriteUInt((uint)InstructionProto.InputType.None);
-                    writer.WriteLong(0);
-                    writer.WriteString("");
-                }
-                else
-                {
-                    writer.WriteUInt((uint)input.Type);
-                    writer.WriteLong(input.Data);
-                    writer.WriteString(input.SData ?? "");
-                }
+                writer.WriteUInt((uint)input.Type);
+                writer.WriteLong(
+                    clearEntities && input.Type == InstructionProto.InputType.Entity
+                        ? -1
+                        : input.Data);
+                writer.WriteString(input.SData ?? "");
             }
 
             writer.WriteInt(m_displays.Length);
-            foreach (var display in m_displays)
+            for (int i = 0; i < m_displays.Length; i++)
             {
-                if (display.Type == InstructionProto.InputType.Entity)
-                {
-                    writer.WriteUInt((uint)InstructionProto.InputType.None);
-                    writer.WriteLong(0);
-                    writer.WriteString("");
-                }
-                else
-                {
-                    writer.WriteUInt((uint)display.Type);
-                    writer.WriteLong(display.Data);
-                    writer.WriteString(display.SData ?? "");
-                }
+                writer.WriteUInt((uint)InstructionProto.InputType.None);
+                writer.WriteLong(0);
+                writer.WriteString("");
             }
+
+            // a programmers note for user
+            writer.WriteString(Note ?? "");
         }
 
         public static bool Deserialize(BlobReader reader, out Instruction instruction)
@@ -229,6 +235,10 @@ namespace ProgramableNetwork
                 }
 
                 instruction = new Instruction(uniqueId, id, m_inputs, m_displays);
+                if (serializerVersion > 0)
+                {
+                    instruction.Note = reader.ReadString();
+                }
                 return true;
             }
             catch (Exception e)
