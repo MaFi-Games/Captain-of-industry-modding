@@ -1,10 +1,23 @@
 ﻿using Mafi;
+using Mafi.Collections;
+using Mafi.Collections.ReadonlyCollections;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Dynamic;
+using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
+using Mafi.Core.Factory.Transports;
 using Mafi.Core.Products;
+using Mafi.Core.Prototypes;
+using Mafi.Core.Terrain;
 using Mafi.Unity;
+using Mafi.Unity.Entities;
+using Mafi.Unity.InputControl;
+using Mafi.Unity.InputControl.AreaTool;
+using Mafi.Unity.InputControl.Cursors;
+using Mafi.Unity.InputControl.Factory;
 using Mafi.Unity.InputControl.Inspectors;
+using Mafi.Unity.InputControl.Toolbar;
+using Mafi.Unity.InputControl.Tools;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
@@ -20,24 +33,22 @@ namespace ProgramableNetwork
         private readonly UiBuilder m_builder;
         private readonly Computer m_computer;
         private readonly MemoryPointer m_input;
-        private readonly Func<ProductProto, bool> m_filter;
+        private readonly Func<Entity, bool> m_filter;
         private readonly Action m_refresh;
         private readonly ItemDetailWindowView m_window;
         private readonly InspectorContext m_inspectorContext;
         private readonly InstructionProto m_instruction;
         private readonly StackContainer m_btnPreviewHolder;
         private Btn m_btnPreview;
-        private Btn m_btnPick;
-        private EntityPicker m_entityPicker;
 
-        public EntityTab(UiBuilder builder, Computer computer, InstructionProto instruction,
+        public EntityTab(UiBuilder builder, Computer computer, InstructionProto instruction, InstructionProto.InputType type,
             MemoryPointer input, Action refresh, ItemDetailWindowView parentWindow, InspectorContext inspectorContext)
             : base(builder, "product_" + DateTime.Now.Ticks)
         {
             m_builder = builder;
             m_computer = computer;
             m_input = input;
-            m_filter = instruction.ProductFilter;
+            m_filter = instruction.EntityFilter;
             m_refresh = refresh;
             m_window = parentWindow;
             m_inspectorContext = inspectorContext;
@@ -45,9 +56,9 @@ namespace ProgramableNetwork
 
             m_btnPreviewHolder = m_builder
                 .NewStackContainer("picker_holder_" + DateTime.Now.Ticks)
-                .SetStackingDirection(Direction.TopToBottom)
+                .SetStackingDirection(Direction.LeftToRight)
                 .SetSizeMode(SizeMode.Dynamic)
-                .SetSize(40, 60)
+                .SetSize(140, 40)
                 .AppendTo(this);
 
             m_btnPreview = m_builder
@@ -57,62 +68,44 @@ namespace ProgramableNetwork
                 .SetIcon(m_builder.Style.Icons.Empty)
                 .AppendTo(m_btnPreviewHolder);
 
-            m_btnPick = m_builder
-                .NewBtnGeneral("item_" + DateTime.Now.Ticks)
-                .SetButtonStyle(m_builder.Style.Global.GeneralBtn)
-                .SetText(NewIds.Texts.Tools.Pick)
-                .SetSize(40, 20)
-                .OnClick(FindEntity)
+            var m_btns = m_builder
+                .NewStackContainer("item_" + DateTime.Now.Ticks)
+                .SetStackingDirection(Direction.TopToBottom)
+                .SetSize(100, 40)
                 .AppendTo(m_btnPreviewHolder);
 
+            if (type == InstructionProto.InputType.Entity || type.HasFlag(InstructionProto.InputType.StaticEntity))
+                m_builder
+                    .NewBtnGeneral("item_building_" + DateTime.Now.Ticks)
+                    .SetButtonStyle(m_builder.Style.Global.GeneralBtn)
+                    .SetText(NewIds.Texts.PointerTypes[InstructionProto.InputType.StaticEntity])
+                    .SetSize(100, 20)
+                    .OnClick(FindBuilding)
+                    .AppendTo(m_btns);
+
+            if (type == InstructionProto.InputType.Entity || type.HasFlag(InstructionProto.InputType.DynamicEntity))
+                m_builder
+                    .NewBtnGeneral("item_vehicle_" + DateTime.Now.Ticks)
+                    .SetButtonStyle(m_builder.Style.Global.GeneralBtn)
+                    .SetText(NewIds.Texts.PointerTypes[InstructionProto.InputType.DynamicEntity])
+                    .SetSize(100, 20)
+                    .OnClick(FindDynamic)
+                    .AppendTo(m_btns);
+
             SetSizeMode(SizeMode.Dynamic);
-            this.SetHeight(60);
+            this.SetHeight(40);
 
             Refresh();
         }
 
-        private void FindEntity()
+        private void FindDynamic()
         {
-            if (m_entityPicker == null)
-            {
-                m_entityPicker = new EntityPicker(this);
-                m_window.SetupInnerWindowWithButton(m_entityPicker, m_btnPreviewHolder, m_btnPreview, () => {
-                    try
-                    {
-                        m_btnPreviewHolder.ClearAndDestroyAll();
-                        m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
-                            .SetButtonStyle(m_builder.Style.Global.ImageBtn)
-                            .SetSize(40, 40)
-                            .SetIcon(m_builder.Style.Icons.Empty)
-                            .OnClick(FindEntity)
-                            .AppendTo(m_btnPreviewHolder);
-                        m_btnPick = m_builder
-                            .NewBtnGeneral("item_" + DateTime.Now.Ticks)
-                            .SetButtonStyle(m_builder.Style.Global.GeneralBtn)
-                            .SetText(NewIds.Texts.Tools.Pick)
-                            .SetSize(40, 20)
-                            .OnClick(FindEntity)
-                            .AppendTo(m_btnPreviewHolder);
-                    }
-                    catch (Exception)
-                    {
-                        // gui issue
-                    }
-                }, () => { });
-                m_window.OnHide += () =>
-                {
-                    try
-                    {
-                        m_entityPicker.Hide();
-                    }
-                    catch (Exception)
-                    {
-                        // gui issue
-                    }
-                };
-            }
+            StaticEntitySelectionController.Instance.Activate(this);
+        }
 
-            m_entityPicker.Show();
+        private void FindBuilding()
+        {
+            VehicleEntitySelectionController.Instance.Activate(this);
         }
 
         public void Refresh()
@@ -146,141 +139,70 @@ namespace ProgramableNetwork
             }
         }
 
-        private class EntityPicker : WindowView
+        [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
+        private class StaticEntitySelectionController : AEntitySelectionController<StaticEntity>
+        {
+            public static StaticEntitySelectionController Instance { get; private set; }
+
+            public StaticEntitySelectionController(ProtosDb protosDb, UiBuilder builder, UnlockedProtosDbForUi unlockedProtosDb, ShortcutsManager shortcutsManager, IUnityInputMgr inputManager, CursorPickingManager cursorPickingManager, CursorManager cursorManager, AreaSelectionToolFactory areaSelectionToolFactory, IEntitiesManager entitiesManager, NewInstanceOf<EntityHighlighter> highlighter, Option<NewInstanceOf<TransportTrajectoryHighlighter>> transportTrajectoryHighlighter)
+                : base(protosDb, builder, unlockedProtosDb, shortcutsManager, inputManager, cursorPickingManager, cursorManager, areaSelectionToolFactory, entitiesManager, highlighter, transportTrajectoryHighlighter, NewIds.Tools.SelectStaticEntity)
+            {
+                Instance = this;
+            }
+        }
+
+        [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
+        private class VehicleEntitySelectionController : AEntitySelectionController<DynamicGroundEntity>
+        {
+            public static VehicleEntitySelectionController Instance { get; private set; }
+
+            public VehicleEntitySelectionController(ProtosDb protosDb, UiBuilder builder, UnlockedProtosDbForUi unlockedProtosDb, ShortcutsManager shortcutsManager, IUnityInputMgr inputManager, CursorPickingManager cursorPickingManager, CursorManager cursorManager, AreaSelectionToolFactory areaSelectionToolFactory, IEntitiesManager entitiesManager, NewInstanceOf<EntityHighlighter> highlighter, Option<NewInstanceOf<TransportTrajectoryHighlighter>> transportTrajectoryHighlighter)
+                : base(protosDb, builder, unlockedProtosDb, shortcutsManager, inputManager, cursorPickingManager, cursorManager, areaSelectionToolFactory, entitiesManager, highlighter, transportTrajectoryHighlighter, NewIds.Tools.SelectDynamicEntity)
+            {
+                Instance = this;
+            }
+        }
+
+        private class AEntitySelectionController<T> : BaseEntityCursorInputController<T> where T : Entity, IRenderedEntity, IAreaSelectableEntity
         {
             private EntityTab m_entityTab;
-            private GridContainer m_grid;
 
-            public EntityPicker(EntityTab productTab)
-                :base("product", FooterStyle.Round, false)
+            public AEntitySelectionController(ProtosDb protosDb, UiBuilder builder, UnlockedProtosDbForUi unlockedProtosDb, ShortcutsManager shortcutsManager, IUnityInputMgr inputManager, CursorPickingManager cursorPickingManager, CursorManager cursorManager, AreaSelectionToolFactory areaSelectionToolFactory, IEntitiesManager entitiesManager, NewInstanceOf<EntityHighlighter> highlighter, Option<NewInstanceOf<TransportTrajectoryHighlighter>> transportTrajectoryHighlighter, Proto.ID? lockByProto)
+                : base(protosDb, builder, unlockedProtosDb, shortcutsManager, inputManager, cursorPickingManager, cursorManager, areaSelectionToolFactory, entitiesManager, highlighter, transportTrajectoryHighlighter, lockByProto)
             {
-                this.m_entityTab = productTab;
+                SetPartialTransportsSelection(false);
             }
 
-            protected override void BuildWindowContent()
-            {
-                this.m_headerText.SetText(NewIds.Texts.PointerTypes[InstructionProto.InputType.Entity]);
-
-                SetContentSize(500, 460);
-
-                var scroll = Builder
-                    .NewScrollableContainer("items-scroll")
-                    .AddVerticalScrollbar()
-                    .SetSize(500, 460)
-                    .PutTo(GetContentPanel());
-
-                GetContentPanel()
-                    .SetSize(500, 460)
-                    .SetBackground(Builder.Style.EntitiesMenu.MenuBg);
-
-                m_grid = Builder
-                    .NewGridContainer("items-grid")
-                    .SetDynamicHeightMode(10)
-                    .SetCellSize(new Vector2(40, 60))
-                    .SetCellSpacing(10)
-                    .SetBackground(Builder.Style.EntitiesMenu.MenuBg)
-                    .SetInnerPadding(Offset.All(5));
-
-                scroll.AddItem(m_grid);
-
-                OnShowStart += RefreshProducts;
+            public void Activate(EntityTab entityTab) {
+                m_entityTab = entityTab;
+                Activate();
             }
 
-            private void RefreshProducts()
+            protected override bool Matches(T entity, bool isAreaSelection, bool isLeftClick)
             {
-                m_grid.ClearAllAndDestroy();
+                return !isAreaSelection && !isLeftClick && m_entityTab.m_filter(entity);
+            }
 
-                var entities = m_entityTab.m_computer.Context.EntitiesManager.GetAllEntitiesOfType<Entity>()
-                    .Where(m_entityTab.m_instruction.EntityFilter)
-                    .Where(searched =>
-                    {
+            protected override void OnEntitiesSelected(IIndexable<T> selectedEntities, IIndexable<SubTransport> selectedPartialTransports, bool isAreaSelection, bool isLeftMouse, RectangleTerrainArea2i? area)
+            {
+                if (selectedEntities.Count == 0) return;
+                if (isAreaSelection) return;
+                if (!isLeftMouse) return;
 
-                        Tile2f position = Tile2f.Zero;
+                // TODO select the first
+                m_entityTab.m_input.Entity = selectedEntities[0];
+                Deactivate();
+                m_entityTab.m_refresh();
+            }
 
-                        if (searched is IEntityWithPosition positioned)
-                            position = positioned.Position2f;
+            protected override bool OnFirstActivated(T hoveredEntity, Lyst<T> selectedEntities, Lyst<SubTransport> selectedPartialTransports)
+            {
+                return false;
+            }
 
-                        else if (searched is DynamicGroundEntity dynamic)
-                            position = dynamic.Position2f;
-
-                        else
-                            return false;
-
-                        if (m_entityTab.m_computer.Position2f.DistanceTo(position) > m_entityTab.m_instruction.EntitySearchDistance)
-                            return false;
-
-                        return true;
-                    })
-                    .OrderBy(v => {
-                        if (v is IEntityWithPosition positioned)
-                            return positioned.Position2f.DistanceTo(m_entityTab.m_computer.Position2f);
-
-                        else if (v is DynamicGroundEntity dynamic)
-                            return dynamic.Position2f.DistanceTo(m_entityTab.m_computer.Position2f);
-
-                        return 0;
-                    })
-                    .ToList();
-
-                foreach (var entity in entities)
-                {
-                    var stack = Builder
-                        .NewStackContainer("item_stack_" + entity.Prototype.Strings.Name.Id)
-                        .SetSize(40, 60)
-                        .SetSizeMode(SizeMode.Dynamic)
-                        .SetStackingDirection(Direction.TopToBottom)
-                        .AppendTo(m_grid);
-
-                    Builder
-                        .NewBtnGeneral("item_" + entity.Prototype.Strings.Name.Id)
-                        .SetButtonStyle(Builder.Style.Global.ImageBtn)
-                        .SetSize(40, 40)
-                        .SetIcon(entity.GetIcon())
-                        .OnClick(
-                            () =>
-                            {
-                                if (entity.HasPosition(out Tile2f position))
-                                    m_entityTab.m_inspectorContext.CameraController.PanTo(position);
-                            })
-                        .SetOnMouseEnterLeaveActions(
-                            () =>
-                            {
-                                m_entityTab.m_inspectorContext.Highlighter.Highlight(
-                                    (IRenderedEntity)entity, ColorRgba.DarkYellow);
-                            },
-                            () =>
-                            {
-                                m_entityTab.m_inspectorContext.Highlighter.RemoveHighlight(
-                                    (IRenderedEntity)entity);
-                            })
-                        .AppendTo(stack);
-
-                    Builder
-                        .NewBtnGeneral("item_" + entity.Prototype.Strings.Name.Id)
-                        .SetButtonStyle(Builder.Style.Global.GeneralBtn)
-                        .SetText(NewIds.Texts.Tools.Pick)
-                        .SetSize(40, 20)
-                        .OnClick(
-                            () =>
-                            {
-                                m_entityTab.m_input.Entity = entity;
-                                m_entityTab.m_input.SData = entity.SerializationInfo(m_entityTab.m_computer);
-                                m_entityTab.m_entityPicker.Hide();
-                                m_entityTab.m_refresh();
-                            })
-                        .SetOnMouseEnterLeaveActions(
-                            () =>
-                            {
-                                m_entityTab.m_inspectorContext.Highlighter.Highlight(
-                                    (IRenderedEntity)entity, ColorRgba.DarkYellow);
-                            },
-                            () =>
-                            {
-                                m_entityTab.m_inspectorContext.Highlighter.RemoveHighlight(
-                                    (IRenderedEntity)entity);
-                            })
-                        .AppendTo(stack);
-                }
+            protected override void RegisterToolbar(ToolbarController controller)
+            {
+                // no toolbar required
             }
         }
     }

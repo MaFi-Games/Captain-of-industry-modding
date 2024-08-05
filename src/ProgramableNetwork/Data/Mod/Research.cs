@@ -25,7 +25,8 @@ namespace ProgramableNetwork
 				.Description("Unlocks controlled input by condition")
 				.SetCosts(ResearchCostsTpl.Build.SetDifficulty(4))
 				.AddLayoutEntityToUnlock(NewIds.Computers.Computer)
-				//.AddLayoutEntityToUnlock(NewIds.Computers.Database)
+				.AddProtoUnlockNoIcon(NewIds.Tools.SelectStaticEntity)
+				.AddProtoUnlockNoIcon(NewIds.Tools.SelectDynamicEntity)
 				.BuildAndAdd();
 			
 			nodeProto.GridPosition = new Vector2i(36, 15);

@@ -67,6 +67,8 @@ namespace ProgramableNetwork
                     { InstructionProto.InputType.Boolean,            Loc.Str("ProgramableNetwork_PointerType_Boolean"      , "Boolean", "") },
                     { InstructionProto.InputType.Integer,            Loc.Str("ProgramableNetwork_PointerType_Integer"      , "Integer", "") },
                     { InstructionProto.InputType.Entity,             Loc.Str("ProgramableNetwork_PointerType_Entity"       , "Entity", "") },
+                    { InstructionProto.InputType.StaticEntity,       Loc.Str("ProgramableNetwork_PointerType_StaticEntity" , "Static", "") },
+                    { InstructionProto.InputType.DynamicEntity,      Loc.Str("ProgramableNetwork_PointerType_DynamicEntity", "Dynamic", "") },
                     { InstructionProto.InputType.Product,            Loc.Str("ProgramableNetwork_PointerType_Product"      , "Product", "") },
 
                 };

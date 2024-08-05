@@ -138,6 +138,8 @@ namespace ProgramableNetwork
             Integer = 0x20000004,
             // entities
             Entity = 0x40000000,
+            StaticEntity = 0x40000001,
+            DynamicEntity = 0x40000002,
             Product = 0x80000000,
         }
 

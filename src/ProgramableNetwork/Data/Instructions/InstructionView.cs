@@ -199,7 +199,7 @@ namespace ProgramableNetwork
                         if (type == InstructionProto.InputType.Instruction)
                             AddInstructionInput(tabs, input, uiData);
                         if (type.HasFlag(InstructionProto.InputType.Entity))
-                            AddEntityInput(tabs, input, uiData, instruction.Prototype);
+                            AddEntityInput(tabs, input, uiData, instruction.Prototype, type);
                         if (type.HasFlag(InstructionProto.InputType.Boolean))
                             AddBooleanInput(tabs, input, uiData);
                         if (type.HasFlag(InstructionProto.InputType.Integer))
@@ -258,12 +258,12 @@ namespace ProgramableNetwork
                     tabs.SwitchToTab(variableTab);
             }
 
-            private void AddEntityInput(MyTabContainer tabs, MemoryPointer input, UiData uiData, InstructionProto instruction)
+            private void AddEntityInput(MyTabContainer tabs, MemoryPointer input, UiData uiData, InstructionProto instruction, InstructionProto.InputType type)
             {
-                var entityTab = new EntityTab(Builder, m_instructionButton.m_computer, instruction, input, uiData.Refresh, m_instructionButton.m_window, m_instructionButton.m_inspectorContext);
+                var entityTab = new EntityTab(Builder, m_instructionButton.m_computer, instruction, type, input, uiData.Refresh, m_instructionButton.m_window, m_instructionButton.m_inspectorContext);
                 uiData.AddToRefreshable(entityTab);
 
-                tabs.AddTab(NewIds.Texts.PointerTypes[InstructionProto.InputType.Entity], entityTab);
+                tabs.AddTab(NewIds.Texts.PointerTypes[type], entityTab);
                 if (input.Type == InstructionProto.InputType.Entity)
                     tabs.SwitchToTab(entityTab);
             }
