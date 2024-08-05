@@ -148,7 +148,7 @@ namespace ProgramableNetwork
 
             registrator
                 .OperationProtoBuilder(NewIds.Instructions.Get.Capacity, "Get (capacity)")
-                .Description("Returns storage limit of selected entity")
+                .Description("Returns capacity of selected entity (storage or transport)")
                 .AddInput("storage", "Storage", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
                 .AddInput("value", "Read to", InstructionProto.InputType.Variable)
                 .EntityFilter(entity => entity is StorageBase || entity is Transport)
@@ -179,7 +179,7 @@ namespace ProgramableNetwork
 
             registrator
                 .OperationProtoBuilder(NewIds.Instructions.Get.Count, "Get (count)")
-                .Description("Returns storage count of selected entity")
+                .Description("Returns count of stored products in selected entity (storage or transport)")
                 .AddInput("storage", "Storage", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
                 .AddInput("value", "Read to", InstructionProto.InputType.Variable)
                 .EntityFilter(entity => entity is StorageBase || entity is Transport)

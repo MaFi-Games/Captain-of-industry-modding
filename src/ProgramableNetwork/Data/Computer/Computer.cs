@@ -207,7 +207,7 @@ namespace ProgramableNetwork
                 return;
             }
 
-            if (Instructions.Count == 0)
+            if (Instructions.Count == 0 || IsPaused)
             {
                 CurrentInstruction = 0;
                 PowerRequired = Prototype.IddlePower;

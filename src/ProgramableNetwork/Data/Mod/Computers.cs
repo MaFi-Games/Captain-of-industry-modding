@@ -1,26 +1,9 @@
 ﻿using Mafi;
 using Mafi.Base;
-using Mafi.Core;
-using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Mods;
-using Mafi.Core.Ports;
-using Mafi.Core.Ports.Io;
 using Mafi.Core.Prototypes;
-using Mafi.Unity;
-using Mafi.Unity.InputControl.Inspectors;
-using Mafi.Unity.UiFramework.Components;
-using UnityEngine;
-using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Mafi.Unity.UiFramework;
-using Mafi.Serialization;
-using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Factory.Transports;
-using Mafi.Core.Products;
-using System.Linq;
 
 namespace ProgramableNetwork
 {

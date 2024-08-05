@@ -30,7 +30,7 @@ namespace ProgramableNetwork
         private readonly InspectorContext m_inspectorContext;
         private readonly StackContainer m_btnPreviewHolder;
         private Btn m_btnPreview;
-        private ProductPicker m_produckPicker;
+        private ProtoPicker<ProductProto> m_protoPicker;
 
         public ProductTab(UiBuilder builder, Computer computer, InstructionProto instruction,
             MemoryPointer input, Action refresh, ItemDetailWindowView parentWindow, InspectorContext inspectorContext)
@@ -64,10 +64,37 @@ namespace ProgramableNetwork
 
         private void FindProduct()
         {
-            if (m_produckPicker == null)
+            if (m_protoPicker == null)
             {
-                m_produckPicker = new ProductPicker(this);
-                m_window.SetupInnerWindowWithButton(m_produckPicker, m_btnPreviewHolder, m_btnPreview, () => {
+                m_protoPicker = new ProtoPicker<ProductProto>(
+                    (product) =>
+                    {
+                        m_input.Product = product;
+                        m_protoPicker.Hide();
+                        try
+                        {
+                            m_btnPreviewHolder.ClearAndDestroyAll();
+                            m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
+                                .SetButtonStyle(m_builder.Style.Global.ImageBtn)
+                                .SetSize(40, 40)
+                                .SetIcon(m_builder.Style.Icons.Empty)
+                                .OnClick(FindProduct)
+                                .AppendTo(m_btnPreviewHolder);
+                        }
+                        catch (Exception)
+                        {
+                            // gui issue
+                        }
+                        m_refresh();
+                    },
+                    (product) => product.Strings.Name,
+                    false);
+
+                m_protoPicker.BuildUi(m_builder);
+                m_protoPicker.SetSize(400, 400);
+                m_protoPicker.SetTitle(Tr.ProductsToFilter);
+
+                m_window.SetupInnerWindowWithButton(m_protoPicker, m_btnPreviewHolder, m_btnPreview, () => {
                     try {
                         m_btnPreviewHolder.ClearAndDestroyAll();
                         m_btnPreview = new Btn(m_builder, "picker_" + DateTime.Now.Ticks)
@@ -82,10 +109,16 @@ namespace ProgramableNetwork
                         // gui issue
                     }
                 }, () => { });
-                m_window.OnHide += m_produckPicker.Hide;
+                m_window.OnHide += m_protoPicker.Hide;
             }
 
-            m_produckPicker.Show();
+            m_protoPicker.SetVisibleProtos(m_inspectorContext.ProtosDb
+                .All<ProductProto>()
+                .Where(p => p.IsAvailable)
+                .Where(m_filter)
+                .ToList());
+
+            m_protoPicker.Show();
         }
 
         public void Refresh()
@@ -94,75 +127,6 @@ namespace ProgramableNetwork
                 m_btnPreview.SetIcon(m_input.Product.IconPath);
             else
                 m_btnPreview.SetIcon(m_builder.Style.Icons.Empty);
-        }
-
-        private class ProductPicker : WindowView
-        {
-            private ProductTab m_productTab;
-            private GridContainer m_grid;
-
-            public ProductPicker(ProductTab productTab)
-                :base("product", FooterStyle.Round, false)
-            {
-                this.m_productTab = productTab;
-            }
-
-            protected override void BuildWindowContent()
-            {
-                this.m_headerText.SetText(NewIds.Texts.PointerTypes[InstructionProto.InputType.Product]);
-
-                SetContentSize(500, 460);
-
-                var scroll = Builder
-                    .NewScrollableContainer("items-scroll")
-                    .AddVerticalScrollbar()
-                    .SetSize(500, 460)
-                    .PutTo(GetContentPanel());
-
-                GetContentPanel()
-                    .SetSize(500, 460)
-                    .SetBackground(Builder.Style.EntitiesMenu.MenuBg);
-
-                m_grid = Builder
-                    .NewGridContainer("items-grid")
-                    .SetDynamicHeightMode(10)
-                    .SetCellSize(new Vector2(40, 40))
-                    .SetCellSpacing(10)
-                    .SetBackground(Builder.Style.EntitiesMenu.MenuBg)
-                    .SetInnerPadding(Offset.All(5));
-
-                scroll.AddItem(m_grid);
-
-                OnShowStart += RefreshProducts;
-            }
-
-            private void RefreshProducts()
-            {
-                m_grid.ClearAllAndDestroy();
-
-                var protos = m_productTab.m_inspectorContext
-                    .ProtosDb.All<ProductProto>()
-                    .Where(proto => proto.IsAvailable)
-                    .Where(m_productTab.m_filter)
-                    .ToList();
-
-                foreach (var proto in protos)
-                {
-                    Builder
-                        .NewBtnGeneral("item_" + proto.Strings.Name.Id)
-                        .SetButtonStyle(Builder.Style.Global.ImageBtn)
-                        .SetSize(40, 40)
-                        .SetIcon(proto.IconPath)
-                        .SetBackgroundColor(new ColorRgba(0, 0))
-                        .OnClick(() =>
-                        {
-                            m_productTab.m_input.Product = proto;
-                            m_productTab.m_produckPicker.Hide();
-                            m_productTab.m_refresh();
-                        })
-                        .AddToGrid(m_grid);
-                }
-            }
         }
     }
 }
