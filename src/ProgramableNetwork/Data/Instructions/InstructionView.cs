@@ -1,8 +1,4 @@
 ﻿using Mafi;
-using Mafi.Core.Entities;
-using Mafi.Core.Entities.Dynamic;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Products;
 using Mafi.Unity;
 using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.UiFramework;
@@ -22,6 +18,7 @@ namespace ProgramableNetwork
         private readonly Computer m_computer;
         private readonly Action m_refresh;
         private readonly ItemDetailWindowView m_window;
+        private readonly ComputerInspector m_inspector;
         private readonly InspectorContext m_inspectorContext;
         private readonly Instruction m_instruction;
         private readonly StackContainer m_btnPreviewHolder;
@@ -29,13 +26,14 @@ namespace ProgramableNetwork
         private Btn m_btnEdit;
 
         public InstructionEditButton(UiBuilder builder, Computer computer, Instruction instruction,
-            Action refresh, ItemDetailWindowView parentWindow, InspectorContext inspectorContext)
+            Action refresh, ItemDetailWindowView parentWindow, ComputerInspector inspector)
             : base(builder, "instruction_edit_" + instruction.UniqueId)
         {
             m_builder = builder;
             m_computer = computer;
             m_window = parentWindow;
-            m_inspectorContext = inspectorContext;
+            m_inspector = inspector;
+            m_inspectorContext = inspector.Context;
             m_instruction = instruction;
             m_refresh = refresh;
 
@@ -260,10 +258,10 @@ namespace ProgramableNetwork
 
             private void AddEntityInput(MyTabContainer tabs, MemoryPointer input, UiData uiData, InstructionProto instruction, InstructionProto.InputType type)
             {
-                var entityTab = new EntityTab(Builder, m_instructionButton.m_computer, instruction, type, input, uiData.Refresh, m_instructionButton.m_window, m_instructionButton.m_inspectorContext);
+                var entityTab = new EntityTab(Builder, m_instructionButton.m_computer, instruction, type, input, uiData.Refresh, m_instructionButton.m_window, m_instructionButton.m_inspector);
                 uiData.AddToRefreshable(entityTab);
 
-                tabs.AddTab(NewIds.Texts.PointerTypes[type], entityTab);
+                tabs.AddTab(NewIds.Texts.PointerTypes[type == InstructionProto.InputType.Any ? InstructionProto.InputType.Entity : type], entityTab);
                 if (input.Type == InstructionProto.InputType.Entity)
                     tabs.SwitchToTab(entityTab);
             }

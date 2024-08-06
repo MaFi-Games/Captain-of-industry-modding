@@ -1,15 +1,10 @@
 ﻿using Mafi;
-using Mafi.Core;
-using Mafi.Unity;
 using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.UiFramework.Components;
 using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Mafi.Unity.UiFramework;
-using Mafi.Core.Syncers;
-using System.Linq;
-using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
@@ -69,7 +64,7 @@ namespace ProgramableNetwork
         private void AddControls(Instruction instruction, int i, StackContainer controls)
         {
             // TODO delete, copy, paste, move up, move down
-            new InstructionEditButton(Builder, Entity, instruction, () => { }, this, m_controller.Context)
+            new InstructionEditButton(Builder, Entity, instruction, () => { }, this, m_controller)
                 .AppendTo(controls, ContainerPosition.RightOrBottom);
 
             new Btn(Builder, "remove_" + DateTime.Now.Ticks)

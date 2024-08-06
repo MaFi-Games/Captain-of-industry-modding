@@ -1,22 +1,13 @@
 ﻿using Mafi;
-using Mafi.Base;
-using Mafi.Core.Entities;
-using Mafi.Core.Entities.Dynamic;
-using Mafi.Core.Entities.Static.Layout;
-using Mafi.Core.Factory.Transports;
 using Mafi.Core.Products;
 using Mafi.Unity;
-using Mafi.Unity.InputControl;
 using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Components;
-using Mafi.Unity.UserInterface.Style;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace ProgramableNetwork
 {
@@ -70,6 +61,7 @@ namespace ProgramableNetwork
                     (product) =>
                     {
                         m_input.Product = product;
+                        m_window.OnHide -= protoPicker_Hide;
                         m_protoPicker.Hide();
                         try
                         {
@@ -87,10 +79,10 @@ namespace ProgramableNetwork
                         }
                         m_refresh();
                     },
-                    (product) => product.Strings.Name,
+                    (product) => product.Strings.DescShort,
                     false);
 
-                m_protoPicker.BuildUi(m_builder);
+                m_protoPicker.BuildIfNeeded(m_builder);
                 m_protoPicker.SetSize(400, 400);
                 m_protoPicker.SetTitle(Tr.ProductsToFilter);
 
@@ -109,7 +101,6 @@ namespace ProgramableNetwork
                         // gui issue
                     }
                 }, () => { });
-                m_window.OnHide += m_protoPicker.Hide;
             }
 
             m_protoPicker.SetVisibleProtos(m_inspectorContext.ProtosDb
@@ -118,7 +109,24 @@ namespace ProgramableNetwork
                 .Where(m_filter)
                 .ToList());
 
+            m_window.OnHide += protoPicker_Hide;
             m_protoPicker.Show();
+        }
+
+        private void protoPicker_Hide()
+        {
+            try
+            {
+                m_protoPicker.Hide();
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+            finally
+            {
+                m_window.OnHide -= protoPicker_Hide;
+            }
         }
 
         public void Refresh()
