@@ -55,6 +55,12 @@ namespace ProgramableNetwork
                 public static readonly InstructionProto.ID Lte = new InstructionProto.ID("ProgramableNetwork_Operation_Compare_Lte");
             }
 
+            public partial class IO
+            {
+                public static readonly InstructionProto.ID Read = new InstructionProto.ID("ProgramableNetwork_Operation_IO_Read");
+                public static readonly InstructionProto.ID Write = new InstructionProto.ID("ProgramableNetwork_Operation_IO_Write");
+            }
+
             public static readonly InstructionProto.ID Goto = new InstructionProto.ID("ProgramableNetwork_Operation_Goto");
             public static readonly InstructionProto.ID Nop = new InstructionProto.ID("ProgramableNetwork_Operation_Nop");
             public static readonly InstructionProto.ID Invalid = new InstructionProto.ID("ProgramableNetwork_Operation_Invalid");
@@ -197,6 +203,38 @@ namespace ProgramableNetwork
                                                                  .Sum();
                     else
                         throw new ProgramException(NewIds.Texts.HasNoStorage);
+                })
+                .BuildAndAdd();
+
+            registrator
+                .OperationProtoBuilder(NewIds.Instructions.IO.Read, "IO read")
+                .Description("Read IO signal on selected or computer cable line")
+                .AddInput("cable", "Cable", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
+                .AddInput("line", "Line", InstructionProto.InputType.Integer, InstructionProto.InputType.Variable)
+                .AddInput("variable", "Value", InstructionProto.InputType.Variable)
+                .EntityFilter(entity => (entity is Transport tr && tr.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType) || (entity is Computer))
+                .Runtime((program) =>
+                {
+                    var cable = program.Input[0, InstructionProto.InputType.Entity];
+                    var line = program.Input[1, InstructionProto.InputType.Integer];
+                    var variable = program.Input[2, InstructionProto.InputType.Variable];
+                    program.Variable[variable] = program.IO[cable, line];
+                })
+                .BuildAndAdd();
+
+            registrator
+                .OperationProtoBuilder(NewIds.Instructions.IO.Write, "IO write")
+                .Description("Writes IO signal on selected cable or computer cable line")
+                .AddInput("cable", "Cable", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
+                .AddInput("line", "Line", InstructionProto.InputType.Integer, InstructionProto.InputType.Variable)
+                .AddInput("variable", "Value", InstructionProto.InputType.Any, InstructionProto.InputType.Variable, InstructionProto.InputType.None)
+                .EntityFilter(entity => (entity is Transport tr && tr.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType) || (entity is Computer))
+                .Runtime((program) =>
+                {
+                    var cable = program.Input[0, InstructionProto.InputType.Entity];
+                    var line = program.Input[1, InstructionProto.InputType.Integer];
+                    var variable = program.Input[2, InstructionProto.InputType.Any];
+                    program.IO[cable, line] = variable;
                 })
                 .BuildAndAdd();
 

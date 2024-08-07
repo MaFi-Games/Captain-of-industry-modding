@@ -1,7 +1,11 @@
-﻿using Mafi.Core.Entities;
+﻿using Mafi;
+using Mafi.Core;
+using Mafi.Core.Entities;
+using Mafi.Core.Factory.Transports;
 using Mafi.Localization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
@@ -57,6 +61,9 @@ namespace ProgramableNetwork
             public static readonly LocStr DivisionByZero = Loc.Str("ProgramableNetwork_DivisionByZero",
                 "Division by zero", "This may happen during operation: A / B");
 
+            public static readonly LocStr CableIsNotConnected = Loc.Str("ProgramableNetwork_CableIsNotConnected",
+                "Cable is not connected", "");
+
             public static readonly Dictionary<InstructionProto.InputType, LocStr> PointerTypes
                 = new Dictionary<InstructionProto.InputType, LocStr>()
                 {
@@ -108,6 +115,7 @@ namespace ProgramableNetwork
     {
         private readonly Computer m_computer;
         private MemoryPointer[] m_inputs;
+        private MemoryPointer[] m_ports;
         private MemoryPointer[] m_variables;
         private MemoryPointer[] m_displays;
 
@@ -135,6 +143,24 @@ namespace ProgramableNetwork
             {
                 get => program.GetVariable(index.Data);
                 set => program.SetVariable(index.Data, value);
+            }
+        }
+
+        public IORef IO => new IORef(this);
+
+        public class IORef
+        {
+            private readonly Program program;
+
+            public IORef(Program program)
+            {
+                this.program = program;
+            }
+
+            public MemoryPointer this[Entity cable, int line]
+            {
+                get => program.GetIO(cable, line);
+                set => program.SetIO(cable, line, value);
             }
         }
 
@@ -255,6 +281,108 @@ namespace ProgramableNetwork
         internal void SetVariables(MemoryPointer[] variables)
         {
             this.m_variables = variables;
+        }
+
+        private void SetIO(Entity cable, int line, MemoryPointer value)
+        {
+            if (cable is Transport transport && transport.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType)
+            {
+                var connectedShape = transport.Ports
+                    .Where(portShape => portShape.IsConnected
+                        && portShape.ConnectedPort.HasValue
+                        && portShape.ConnectedPort.Value.OwnerEntity.Id == m_computer.Id)
+                    .First();
+
+                if (connectedShape == null)
+                    throw new ProgramException(NewIds.Texts.CableIsNotConnected);
+
+                int maximumOfSignals = transport.Prototype.TransportedProductsSpacing.Value.IntegerPart;
+                if (line < 0 || line >= maximumOfSignals)
+                    throw new ProgramException(NewIds.Texts.IndexOutOfRange.Format(
+                        line.ToString(), maximumOfSignals.ToString()
+                        ));
+
+                m_computer.GetIO(connectedShape.ConnectedPort.Value.Id, line).Assign(value);
+            }
+            else if (cable is Computer connectedComputer)
+            {
+                var connectedShape = connectedComputer.Ports
+                    .Where(portShape => portShape.IsConnected
+                        && portShape.ConnectedPort.HasValue
+                        && portShape.ConnectedPort.Value.OwnerEntity.Id == m_computer.Id)
+                    .First();
+
+                if (connectedShape == null)
+                    throw new ProgramException(NewIds.Texts.CableIsNotConnected);
+
+                m_computer.GetIO(connectedShape.Id, line).Assign(value);
+            }
+            else
+            {
+                throw new ProgramException(NewIds.Texts.CableIsNotConnected);
+            }
+        }
+
+        private MemoryPointer GetIO(Entity cable, int line)
+        {
+            if (cable is Transport transport && transport.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType)
+            {
+                var connectedShape = transport.Ports
+                    .Where(portShape => portShape.IsConnected
+                        && portShape.ConnectedPort.HasValue
+                        && portShape.ConnectedPort.Value.OwnerEntity.Id == m_computer.Id)
+                    .First();
+
+                if (connectedShape == null)
+                    throw new ProgramException(NewIds.Texts.CableIsNotConnected);
+
+                int maximumOfSignals = transport.Prototype.TransportedProductsSpacing.Value.IntegerPart;
+                if (line < 0 || line >= maximumOfSignals)
+                    throw new ProgramException(NewIds.Texts.IndexOutOfRange.Format(
+                        line.ToString(), maximumOfSignals.ToString()
+                        ));
+
+                var connectedTargetShape = transport.Ports
+                    .Where(portShape => portShape.IsConnected
+                        && portShape.ConnectedPort.HasValue
+                        && portShape.Id != connectedShape.Id)
+                    .Select(portShape => portShape.ConnectedPort.ValueOrNull)
+                    .First();
+
+                if (connectedTargetShape == null)
+                {
+                    var mp = new MemoryPointer();
+                    mp.Recontext(m_computer);
+                    return mp;
+                }
+
+                return ((Computer)connectedTargetShape.OwnerEntity).GetIO(connectedTargetShape.Id, line);
+            }
+            else if (cable is Computer connectedComputer)
+            {
+                var connectedShape = connectedComputer.Ports
+                    .Where(portShape => portShape.IsConnected
+                        && portShape.ConnectedPort.HasValue
+                        && portShape.ConnectedPort.Value.OwnerEntity.Id == m_computer.Id)
+                    .First();
+
+                if (connectedShape == null)
+                    throw new ProgramException(NewIds.Texts.CableIsNotConnected);
+
+                // always connected
+                var connectedTargetShape = connectedComputer.Ports
+                    .Where(portShape => portShape.IsConnected
+                        && portShape.ConnectedPort.HasValue
+                        && portShape.Id != connectedShape.Id)
+                    .Select(portShape => portShape.ConnectedPort.ValueOrNull)
+                    .First();
+
+                return ((Computer)connectedTargetShape.OwnerEntity).GetIO(connectedTargetShape.Id, line);
+            }
+            else
+            {
+                throw new ProgramException(NewIds.Texts.CableIsNotConnected);
+            }
         }
     }
 }

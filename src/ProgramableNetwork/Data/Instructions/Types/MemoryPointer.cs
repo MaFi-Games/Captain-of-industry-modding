@@ -1,6 +1,7 @@
 ﻿using Mafi;
 using Mafi.Core.Entities;
 using Mafi.Core.Products;
+using Mafi.Serialization;
 using System;
 using System.Text.RegularExpressions;
 
@@ -176,6 +177,35 @@ namespace ProgramableNetwork
                         NewIds.Texts.PointerTypes[pointer.Type]
                     ));
             return pointer.Product;
+        }
+
+        public static implicit operator Entity(MemoryPointer pointer)
+        {
+            if (pointer.Type != InstructionProto.InputType.Entity)
+                throw new ProgramException(NewIds.Texts.InvalidPointerType.Format(
+                        NewIds.Texts.PointerTypes[InstructionProto.InputType.Entity],
+                        NewIds.Texts.PointerTypes[pointer.Type]
+                    ));
+            return (Entity)pointer.Entity;
+        }
+
+        internal void SerializeData(BlobWriter writer, bool clearEntities)
+        {
+            writer.WriteUInt((uint)Type);
+            writer.WriteLong(
+                clearEntities && Type == InstructionProto.InputType.Entity
+                    ? -1
+                    : Data);
+            writer.WriteString(SData ?? "");
+        }
+
+        internal static MemoryPointer Deserialize(BlobReader reader)
+        {
+            var input = new MemoryPointer();
+            input.Type = (InstructionProto.InputType)reader.ReadUInt();
+            input.Data = reader.ReadLong();
+            input.SData = reader.ReadString();
+            return input;
         }
     }
 }

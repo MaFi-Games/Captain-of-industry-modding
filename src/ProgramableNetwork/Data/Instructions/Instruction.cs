@@ -188,20 +188,13 @@ namespace ProgramableNetwork
             writer.WriteInt(m_inputs.Length);
             foreach (var input in m_inputs)
             {
-                writer.WriteUInt((uint)input.Type);
-                writer.WriteLong(
-                    clearEntities && input.Type == InstructionProto.InputType.Entity
-                        ? -1
-                        : input.Data);
-                writer.WriteString(input.SData ?? "");
+                input.SerializeData(writer, clearEntities);
             }
 
             writer.WriteInt(m_displays.Length);
             for (int i = 0; i < m_displays.Length; i++)
             {
-                writer.WriteUInt((uint)InstructionProto.InputType.None);
-                writer.WriteLong(0);
-                writer.WriteString("");
+                new MemoryPointer().SerializeData(writer, clearEntities);
             }
 
             // a programmers note for user
@@ -219,19 +212,13 @@ namespace ProgramableNetwork
                 MemoryPointer[] m_inputs = new MemoryPointer[reader.ReadInt()];
                 for (int i = 0; i < m_inputs.Length; i++)
                 {
-                    MemoryPointer input = m_inputs[i] = new MemoryPointer();
-                    input.Type = (InstructionProto.InputType)reader.ReadUInt();
-                    input.Data = reader.ReadLong();
-                    input.SData = reader.ReadString();
+                    m_inputs[i] = MemoryPointer.Deserialize(reader);
                 }
 
                 MemoryPointer[] m_displays = new MemoryPointer[reader.ReadInt()];
                 for (int i = 0; i < m_displays.Length; i++)
                 {
-                    MemoryPointer display = m_displays[i] = new MemoryPointer();
-                    display.Type = (InstructionProto.InputType)reader.ReadUInt();
-                    display.Data = reader.ReadLong();
-                    display.SData = reader.ReadString();
+                    m_displays[i] = MemoryPointer.Deserialize(reader);
                 }
 
                 instruction = new Instruction(uniqueId, id, m_inputs, m_displays);

@@ -189,11 +189,12 @@ namespace ProgramableNetwork
                         throw new InvalidCastException($"Input is null");
 
                     UiData inputUiData = uiData.ForInput(i, input);
+                    AddNoneInput(tabs, input, uiData);
+                    if (instruction.Prototype.Inputs[i].Types.Any(type => type == InstructionProto.InputType.Variable))
+                        AddVariableInput(tabs, input, uiData);
 
                     foreach (InstructionProto.InputType type in instruction.Prototype.Inputs[i].Types)
                     {
-                        if (type == InstructionProto.InputType.Variable)
-                            AddVariableInput(tabs, input, uiData);
                         if (type == InstructionProto.InputType.Instruction)
                             AddInstructionInput(tabs, input, uiData);
                         if (type.HasFlag(InstructionProto.InputType.Entity))
@@ -244,6 +245,16 @@ namespace ProgramableNetwork
                     new DisplayTab(uiData.ForInput(i, input))
                         .AppendTo(variableContainer);
                 }
+            }
+
+            private void AddNoneInput(MyTabContainer tabs, MemoryPointer input, UiData uiData)
+            {
+                var variableTab = new NoneTab(Builder, Style, input, uiData.Refresh);
+                uiData.AddToRefreshable(variableTab);
+
+                tabs.AddTab(NewIds.Texts.PointerTypes[InstructionProto.InputType.None], variableTab);
+                if (input.Type == InstructionProto.InputType.None)
+                    tabs.SwitchToTab(variableTab);
             }
 
             private void AddVariableInput(MyTabContainer tabs, MemoryPointer input, UiData uiData)

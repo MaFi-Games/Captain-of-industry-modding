@@ -5,19 +5,19 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Ports.Io;
 using System;
 using Mafi.Serialization;
-using Mafi.Core.Buildings.Storages;
-using Mafi.Core.Factory.Transports;
 using System.Collections.Generic;
 using Mafi.Core.Population;
 using Mafi.Core.Prototypes;
 using Mafi.Base;
 using Mafi.Core.Factory.ElectricPower;
 using Mafi.Collections.ImmutableCollections;
+using Mafi.Core.Ports;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
     [GenerateSerializer(false, null, 0)]
-    public class Computer : LayoutEntity, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate, IUnityConsumingEntity, IElectricityConsumingEntity
+    public class Computer : LayoutEntity, IEntityWithPorts, IAreaSelectableEntity, IEntityWithCloneableConfig, IEntityWithSimUpdate, IUnityConsumingEntity, IElectricityConsumingEntity
     {
         private static readonly Action<object, BlobWriter> s_serializeDataDelayedAction = delegate(object obj, BlobWriter writer)
 	    {
@@ -36,6 +36,7 @@ namespace ProgramableNetwork
             Instructions = new List<Instruction>();
             m_unityConsumer = context.UnityConsumerFactory.CreateConsumer(this);
             m_electricConsumer = context.ElectricityConsumerFactory.CreateConsumer(this);
+            m_io = new Dictionary<(IoPortId cable, int line), MemoryPointer>();
         }
 
         [DoNotSave(0, null)]
@@ -104,11 +105,10 @@ namespace ProgramableNetwork
             }
             return value;
         }
-
-        [DoNotSave(0, null)]
-        private readonly int SerializerVersion = 0;
         [DoNotSave(0, null)]
         private Program m_program;
+        [DoNotSave(0, null)]
+        private Dictionary<(IoPortId cable, int line), MemoryPointer> m_io;
 
         [InitAfterLoad(InitPriority.Normal)]
         [OnlyForSaveCompatibility(null)]
@@ -118,11 +118,20 @@ namespace ProgramableNetwork
             {
                 item.Recontext(this);
             }
+            if (m_io == null)
+                m_io = new Dictionary<(IoPortId cable, int line), MemoryPointer>();
+            foreach (var item in m_io.Values)
+            {
+                item.Recontext(this);
+            }
 
             Prototype = Context.ProtosDb.Get<ComputerProto>(m_protoId).ValueOrThrow("Invalid computer proto");
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
         }
 
+
+        [DoNotSave(0, null)]
+        private readonly int SerializerVersion = 1;
         protected override void SerializeData(BlobWriter writer)
         {
             base.SerializeData(writer);
@@ -136,6 +145,16 @@ namespace ProgramableNetwork
             }
 
             writer.WriteString(ErrorMessage ?? "");
+
+            Log.Debug($"Serializing IO: {m_io.Count}");
+            writer.WriteInt(m_io?.Count ?? 0);
+            foreach (var pair in m_io)
+            {
+                Log.Debug($"Cable: {pair.Key.cable.Value}:{pair.Key.line}:{pair.Value.Type}");
+                writer.WriteInt(pair.Key.cable.Value);
+                writer.WriteInt(pair.Key.line);
+                pair.Value.SerializeData(writer, false);
+            }
         }
 
         protected override void DeserializeData(BlobReader reader)
@@ -156,6 +175,21 @@ namespace ProgramableNetwork
                     this.Instructions.Add(Instruction.Invalid());
             }
             ErrorMessage = reader.ReadString();
+
+            m_io = new Dictionary<(IoPortId cable, int line), MemoryPointer>();
+            if (version > 0)
+            {
+                int countOfIO = reader.ReadInt();
+                Log.Debug($"Deserializing IO: {countOfIO}");
+                for (int i = 0; i < countOfIO; i++)
+                {
+                    IoPortId cabel = new IoPortId(reader.ReadInt());
+                    int line = reader.ReadInt();
+                    MemoryPointer memoryPointer = MemoryPointer.Deserialize(reader);
+                    m_io[(cabel, line)] = memoryPointer;
+                    Log.Debug($"Cable: {cabel.Value}:{line}:{memoryPointer.Type}");
+                }
+            }
 
             reader.RegisterInitAfterLoad(this, "initContexts", InitPriority.Normal);
         }
@@ -212,6 +246,7 @@ namespace ProgramableNetwork
                 CurrentInstruction = 0;
                 PowerRequired = Prototype.IddlePower;
                 m_program = null;
+                m_io.Clear();
                 return;
             }
 
@@ -299,6 +334,25 @@ namespace ProgramableNetwork
                 WaitForUser = false;
             }
 
+        }
+
+        public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
+        {
+            return Quantity.Zero; // TODO keep displayed content
+        }
+
+        public MemoryPointer GetIO(IoPortId cable, int line)
+        {
+            if (this.m_io.TryGetValue((cable, line), out MemoryPointer memoryPointer)) {
+                return memoryPointer;
+            }
+            else
+            {
+                memoryPointer = new MemoryPointer();
+                memoryPointer.Recontext(this);
+                m_io[(cable, line)] = memoryPointer;
+                return memoryPointer;
+            }
         }
     }
 }

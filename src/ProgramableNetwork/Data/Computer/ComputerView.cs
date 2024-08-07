@@ -58,7 +58,7 @@ namespace ProgramableNetwork
 
             var instructionIndex = AddStatusInfoPanel();
             updaterBuilder.Observe(() => m_controller.SelectedEntity?.CurrentInstruction ?? 0)
-                .Do(instr => instructionIndex.SetStatus(instr.ToString(), StatusPanel.State.Ok));
+                .Do(instr => instructionIndex.SetStatus($"{instr:D3}", StatusPanel.State.Ok));
 
             AddGeneralPriorityPanel(m_controller.Context, () => m_controller.SelectedEntity);
 
