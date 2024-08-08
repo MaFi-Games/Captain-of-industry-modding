@@ -64,6 +64,25 @@ namespace ProgramableNetwork
 
             itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);
 
+            MyTabContainer tabContainer = new MyTabContainer(Builder, Style, "computerType", () => { })
+                .SetWidth(720)
+                .AppendTo(itemContainer);
+
+            StackContainer newType = Builder
+                .NewStackContainer("newType")
+                .SetWidth(720)
+                .SetItemSpacing(5);
+
+            tabContainer.AddTab(new Mafi.Localization.LocStrFormatted("New implementation"), newType);
+            AddModuleImplementation(newType, updaterBuilder);
+
+            StackContainer oldType = Builder
+                .NewStackContainer("oldType")
+                .SetWidth(720)
+                .SetItemSpacing(5);
+
+            tabContainer.AddTab(new Mafi.Localization.LocStrFormatted("Old implementation (change required)"), oldType);
+
             instructionListHolder = Builder
                 .NewStackContainer("instructionHolder")
                 .SetStackingDirection(StackContainer.Direction.TopToBottom)
@@ -71,7 +90,7 @@ namespace ProgramableNetwork
                 .SetInnerPadding(Offset.All(5))
                 .SetWidth(720)
                 .SetItemSpacing(5)
-                .AppendTo(itemContainer);
+                .AppendTo(oldType);
 
             this.SetWidth(760);
 
@@ -79,7 +98,7 @@ namespace ProgramableNetwork
 
             selectionchanged = updaterBuilder.CreateSyncer(() => m_controller.SelectedEntity);
 
-            AddInstructionAdder(itemContainer, updaterBuilder);
+            AddInstructionAdder(oldType, updaterBuilder);
 
             AddUpdater(updaterBuilder.Build());
             m_repaintInstructions = true;

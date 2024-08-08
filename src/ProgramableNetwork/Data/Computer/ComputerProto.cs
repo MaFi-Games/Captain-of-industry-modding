@@ -16,6 +16,14 @@ namespace ProgramableNetwork
         public Electricity IddlePower { get; }
         public int InstructionLevel { get; }
         public int Variables { get; }
+        public ModuleLayout ModuleLayout { get; } = ModuleLayout.Parse(
+            "CCCCCCCCCC",
+            "CMMMMMMMMC",
+            "CRRRRRRRRC",
+            "CRRRRRRRRC",
+            "CMMMMMMMMC",
+            "CCCCCCCCCC"
+        );
 
         public ComputerProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics,
             int operationCount,

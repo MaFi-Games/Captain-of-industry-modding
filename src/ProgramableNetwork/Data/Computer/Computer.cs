@@ -13,6 +13,7 @@ using Mafi.Core.Factory.ElectricPower;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Ports;
 using System.Linq;
+using Mafi.Collections;
 
 namespace ProgramableNetwork
 {
@@ -37,6 +38,7 @@ namespace ProgramableNetwork
             m_unityConsumer = context.UnityConsumerFactory.CreateConsumer(this);
             m_electricConsumer = context.ElectricityConsumerFactory.CreateConsumer(this);
             m_io = new Dictionary<(IoPortId cable, int line), MemoryPointer>();
+            Modules = new Lyst<ComputerModule>();
         }
 
         [DoNotSave(0, null)]
@@ -127,6 +129,9 @@ namespace ProgramableNetwork
 
             Prototype = Context.ProtosDb.Get<ComputerProto>(m_protoId).ValueOrThrow("Invalid computer proto");
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
+
+            if (Modules == null)
+                Modules = new Lyst<ComputerModule>();
         }
 
 
@@ -354,5 +359,8 @@ namespace ProgramableNetwork
                 return memoryPointer;
             }
         }
+
+        [DoNotSave()]
+        public Lyst<ComputerModule> Modules { get; private set; }
     }
 }
