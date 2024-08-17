@@ -209,10 +209,11 @@ namespace ProgramableNetwork
             registrator
                 .OperationProtoBuilder(NewIds.Instructions.IO.Read, "IO read")
                 .Description("Read IO signal on selected or computer cable line")
-                .AddInput("cable", "Cable", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
+                .AddInput("cable", "Cable", InstructionProto.InputType.Entity)
                 .AddInput("line", "Line", InstructionProto.InputType.Integer, InstructionProto.InputType.Variable)
                 .AddInput("variable", "Value", InstructionProto.InputType.Variable)
-                .EntityFilter(entity => (entity is Transport tr && tr.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType) || (entity is Computer))
+                .EntityFilter(Mafi.Fix32.MaxValue)
+                .EntityFilter(entity => (entity is Transport tr && tr.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType))
                 .Runtime((program) =>
                 {
                     var cable = program.Input[0, InstructionProto.InputType.Entity];
@@ -228,7 +229,8 @@ namespace ProgramableNetwork
                 .AddInput("cable", "Cable", InstructionProto.InputType.Entity, InstructionProto.InputType.Variable)
                 .AddInput("line", "Line", InstructionProto.InputType.Integer, InstructionProto.InputType.Variable)
                 .AddInput("variable", "Value", InstructionProto.InputType.Any, InstructionProto.InputType.Variable, InstructionProto.InputType.None)
-                .EntityFilter(entity => (entity is Transport tr && tr.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType) || (entity is Computer))
+                .EntityFilter(Mafi.Fix32.MaxValue)
+                .EntityFilter(entity => (entity is Transport tr && tr.Prototype.PortsShape.AllowedProductType == ProtocolProductProto.ProductType))
                 .Runtime((program) =>
                 {
                     var cable = program.Input[0, InstructionProto.InputType.Entity];

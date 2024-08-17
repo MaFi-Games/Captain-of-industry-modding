@@ -19,19 +19,21 @@ namespace ProgramableNetwork
     {
 
         Dict<EntityId, ComputerModuleView> m_views = new Dict<EntityId, ComputerModuleView>();
+        private StackContainer m_moduleLayout;
 
         private void AddModuleImplementation(StackContainer itemsContainer, UpdaterBuilder updaterBuilder)
         {
-            Builder
+            m_moduleLayout = Builder
                 .NewStackContainer("")
                 .SetSizeMode(StackContainer.SizeMode.StaticDirectionAligned)
-                .SetSize(Entity.Prototype.ModuleLayout.X * 20, Entity.Prototype.ModuleLayout.Y * 20)
                 .AppendTo(itemsContainer);
 
 
-            updaterBuilder.Observe(() => Entity.Modules, new ModuleIdComparator())
+            updaterBuilder.Observe(() => Entity?.Modules, new ModuleIdComparator())
                 .Do(modules =>
                 {
+                    if (modules != null && Entity.Prototype.ModuleLayout != null)
+                        m_moduleLayout.SetSize(Entity.Prototype.ModuleLayout.X * 20, Entity.Prototype.ModuleLayout.Y * 20);
                     // TODO validate colisions
                     Set<EntityId> found = new Set<EntityId>();
                     foreach (var module in modules)

@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "ProgramableNetwork": {
+      "commandName": "Project"
+    },
+    "Profil 1": {
+      "commandName": "Executable",
+      "executablePath": "S:\\SteamLibrary\\steamapps\\common\\Captain of Industry\\Captain of Industry.exe"
+    }
+  }
+}

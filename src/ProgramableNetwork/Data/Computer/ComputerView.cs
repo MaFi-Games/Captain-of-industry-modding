@@ -66,6 +66,7 @@ namespace ProgramableNetwork
 
             MyTabContainer tabContainer = new MyTabContainer(Builder, Style, "computerType", () => { })
                 .SetWidth(720)
+                .SetTabCellSize(new Vector2(310, 40))
                 .AppendTo(itemContainer);
 
             StackContainer newType = Builder
@@ -78,6 +79,7 @@ namespace ProgramableNetwork
 
             StackContainer oldType = Builder
                 .NewStackContainer("oldType")
+                .SetStackingDirection(StackContainer.Direction.TopToBottom)
                 .SetWidth(720)
                 .SetItemSpacing(5);
 

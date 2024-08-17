@@ -32,8 +32,8 @@ namespace ProgramableNetwork
 				.AddProtoUnlockNoIcon(NewIds.Transport.CablePort)
 				.BuildAndAdd();
 			
-			nodeProto.GridPosition = new Vector2i(36, 15);
-			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.ResearchLab2));
+			nodeProto.GridPosition = new Vector2i(36, 8);
+			nodeProto.AddParent(registrator.PrototypesDb.GetOrThrow<ResearchNodeProto>(Ids.Research.MaintenanceDepot));
 		}
 
         internal static void AddModule(ComputerModuleProto.ID id, ResNodeID stage)
