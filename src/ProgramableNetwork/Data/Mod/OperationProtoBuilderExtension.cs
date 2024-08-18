@@ -17,8 +17,8 @@ namespace ProgramableNetwork
                 .AddInput("c", "C", "Result variable", InstructionProto.InputType.Variable)
                 .Runtime((program) =>
                 {
-                    var a = program.Input[0, InstructionProto.InputType.Integer];
-                    var b = program.Input[1, InstructionProto.InputType.Integer];
+                    var a = program.Input[0];
+                    var b = program.Input[1];
                     var c = program.Input[2, InstructionProto.InputType.Variable];
                     program.Variable[c].Integer = operation(a, b);
                 });
@@ -31,8 +31,8 @@ namespace ProgramableNetwork
                 .AddInput("c", "C", "Result variable", InstructionProto.InputType.Variable)
                 .Runtime((program) =>
                 {
-                    var a = program.Input[0, InstructionProto.InputType.Boolean];
-                    var b = program.Input[1, InstructionProto.InputType.Boolean];
+                    var a = program.Input[0];
+                    var b = program.Input[1];
                     var c = program.Input[2, InstructionProto.InputType.Variable];
                     program.Variable[c].Boolean = operation(a, b);
                 });
@@ -45,8 +45,8 @@ namespace ProgramableNetwork
                 .AddInput("c", "C", "Result variable", InstructionProto.InputType.Variable)
                 .Runtime((program) =>
                 {
-                    var a = program.Input[0, InstructionProto.InputType.Integer];
-                    var b = program.Input[1, InstructionProto.InputType.Integer];
+                    var a = program.Input[0];
+                    var b = program.Input[1];
                     var c = program.Input[2, InstructionProto.InputType.Variable];
                     program.Variable[c].Boolean = operation(a, b);
                 });

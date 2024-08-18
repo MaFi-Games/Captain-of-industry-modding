@@ -16,6 +16,7 @@ namespace ProgramableNetwork
     public partial class ComputerView : StaticEntityInspectorBase<Computer>
     {
         private readonly ComputerInspector m_controller;
+        private readonly Dictionary<IUiElement, Action> m_displayChanges;
         private ISyncer<Computer> selectionchanged;
         private StackContainer instructionListHolder;
         private Instruction m_copiedInstruction;
@@ -24,6 +25,7 @@ namespace ProgramableNetwork
             : base(controller)
         {
             m_controller = controller;
+            m_displayChanges = new Dictionary<IUiElement, Action>();
         }
 
         protected override Computer Entity => m_controller.SelectedEntity;
@@ -123,12 +125,16 @@ namespace ProgramableNetwork
 
                 instructionListHolder.ClearAndDestroyAll();
 
-                UpdateUI();
+                UpdateUI(m_displayChanges);
             }
 
             if (m_controller.SelectedEntity != null)
+            {
                 foreach (var r in refreshed)
                     r.Refresh();
+                foreach (var d in new List<Action>(m_displayChanges.Values))
+                    d.Invoke();
+            }
         }
     }
 }

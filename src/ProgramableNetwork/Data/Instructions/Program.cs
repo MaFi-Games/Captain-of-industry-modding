@@ -115,7 +115,6 @@ namespace ProgramableNetwork
     {
         private readonly Computer m_computer;
         private MemoryPointer[] m_inputs;
-        private MemoryPointer[] m_ports;
         private MemoryPointer[] m_variables;
         private MemoryPointer[] m_displays;
 
@@ -178,6 +177,11 @@ namespace ProgramableNetwork
             public MemoryPointer this[int index, InstructionProto.InputType type]
             {
                 get => program.GetInput(index).IsOrThrow(program, type);
+            }
+
+            public MemoryPointer this[int index]
+            {
+                get => program.GetInput(index);
             }
         }
 

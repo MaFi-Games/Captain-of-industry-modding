@@ -12,7 +12,7 @@ namespace ProgramableNetwork
     {
         private readonly List<IRefreshable> refreshed = new List<IRefreshable>();
 
-        private void UpdateUI()
+        private void UpdateUI(Dictionary<IUiElement, Action> displayChanged)
         {
             refreshed.Clear();
 
@@ -36,6 +36,107 @@ namespace ProgramableNetwork
 
                 AddNameAndHelp(i, instruction, singleHolder);
                 AddControls(instruction, i, singleHolder);
+
+                // displays
+                int displayIndex = 0;
+                if (instruction.Displays.Length > 0)
+                {
+                    int j = displayIndex++;
+
+                    var displayHolder = Builder
+                        .NewStackContainer("displayHolder_" + i + "_" + DateTime.Now.Ticks)
+                        .SetStackingDirection(StackContainer.Direction.LeftToRight)
+                        .SetBackground(ColorRgba.DarkDarkGray)
+                        .SetInnerPadding(Offset.All(5))
+                        .SetHeight(30)
+                        .SetItemSpacing(5)
+                        .SetSizeMode(StackContainer.SizeMode.Dynamic)
+                        .AppendTo(instructionListHolder);
+
+                    foreach (var display in instruction.Displays)
+                    {
+                        var name = Builder
+                            .NewTxt("displayName_" + i + "_" + j + "_" + DateTime.Now.Ticks)
+                            .SetText(instruction.Prototype.Displays[j].Name + ":")
+                            .SetWidth(200)
+                            .SetAlignment(TextAnchor.MiddleLeft)
+                            .AppendTo(displayHolder);
+
+                        var icon = Builder
+                            .NewIconContainer("displayIcon_" + i + "_" + j + "_" + DateTime.Now.Ticks)
+                            .SetSize(40, 40)
+                            .AppendTo(displayHolder);
+
+                        var text = Builder
+                            .NewTxt("displayText_" + i + "_" + j + "_" + DateTime.Now.Ticks)
+                            .SetWidth(200)
+                            .SetAlignment(TextAnchor.MiddleLeft)
+                            .AppendTo(displayHolder);
+
+                        displayHolder.SetItemVisibility(text, false);
+                        displayHolder.SetItemVisibility(icon, false);
+
+                        displayChanged.Add(icon, (Action)(() =>
+                        {
+                            try
+                            {
+                                if (display.Type == InstructionProto.InputType.Product)
+                                {
+                                    icon.SetIcon(display.Product.IconPath);
+                                    displayHolder.SetHeight(40);
+                                    displayHolder.SetItemVisibility(icon, true);
+                                }
+                                else if (display.Type == InstructionProto.InputType.Entity)
+                                {
+                                    icon.SetIcon(display.Entity.GetIcon());
+                                    displayHolder.SetHeight(40);
+                                    displayHolder.SetItemVisibility(icon, true);
+                                }
+                                else
+                                {
+                                    displayHolder.SetItemVisibility(icon, false);
+                                }
+                            }
+                            catch (Exception)
+                            {
+                                displayChanged.Remove(icon);
+                            }
+                        }));
+
+                        displayChanged.Add(text, (Action)(() =>
+                        {
+                            try
+                            {
+                                if (display.Type == InstructionProto.InputType.Integer)
+                                {
+                                    text.SetText(display.Integer.ToString());
+                                    displayHolder.SetHeight(30);
+                                    displayHolder.SetItemVisibility(text, true);
+                                }
+                                else if (display.Type == InstructionProto.InputType.Boolean)
+                                {
+                                    text.SetText(display.Boolean.ToString());
+                                    displayHolder.SetHeight(30);
+                                    displayHolder.SetItemVisibility(text, true);
+                                }
+                                else if (display.Type == InstructionProto.InputType.Instruction)
+                                {
+                                    text.SetText(m_controller.SelectedEntity.GetInstructionIndex(display.Instruction).ToString("D3"));
+                                    displayHolder.SetHeight(30);
+                                    displayHolder.SetItemVisibility(text, true);
+                                }
+                                else
+                                {
+                                    displayHolder.SetItemVisibility(text, false);
+                                }
+                            }
+                            catch (Exception)
+                            {
+                                displayChanged.Remove(text);
+                            }
+                        }));
+                    }
+                }
             }
         }
 

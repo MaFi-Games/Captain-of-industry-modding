@@ -120,8 +120,6 @@ namespace ProgramableNetwork
             {
                 item.Recontext(this);
             }
-            if (m_io == null)
-                m_io = new Dictionary<(IoPortId cable, int line), MemoryPointer>();
             foreach (var item in m_io.Values)
             {
                 item.Recontext(this);
@@ -134,6 +132,13 @@ namespace ProgramableNetwork
                 Modules = new Lyst<ComputerModule>();
         }
 
+        public int GetInstructionIndex(long instruction)
+        {
+            for (int i = 0; i < Instructions.Count; i++)
+                if (Instructions[i].UniqueId == instruction)
+                    return i;
+            return -1;
+        }
 
         [DoNotSave(0, null)]
         private readonly int SerializerVersion = 1;
@@ -233,6 +238,9 @@ namespace ProgramableNetwork
 
         [DoNotSave(0, null)]
         public bool WaitForUser { get; private set; }
+
+        [DoNotSave(0, null)]
+        public Program Program => m_program;
 
         public void SimUpdate()
         {

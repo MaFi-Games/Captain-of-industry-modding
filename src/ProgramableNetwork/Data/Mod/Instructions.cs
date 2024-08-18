@@ -110,7 +110,7 @@ namespace ProgramableNetwork
                 .Runtime((program) =>
                 {
                     var building = program.Input[0, InstructionProto.InputType.Entity];
-                    var active = program.Input[1, InstructionProto.InputType.Boolean];
+                    var active = program.Input[1];
 
                     if (building.Entity == null)
                         throw new ProgramException(NewIds.Texts.EmptyInput.Format(0.ToString()));
@@ -147,7 +147,7 @@ namespace ProgramableNetwork
                 .AddInput("toto", "Goto", InstructionProto.InputType.Instruction, InstructionProto.InputType.Variable)
                 .Runtime((program) =>
                 {
-                    if (program.Input[0, InstructionProto.InputType.Boolean])
+                    if (program.Input[0])
                         program.NextInstruction(program.Input[1, InstructionProto.InputType.Instruction]);
                 })
                 .BuildAndAdd();
@@ -217,7 +217,7 @@ namespace ProgramableNetwork
                 .Runtime((program) =>
                 {
                     var cable = program.Input[0, InstructionProto.InputType.Entity];
-                    var line = program.Input[1, InstructionProto.InputType.Integer];
+                    var line = program.Input[1];
                     var variable = program.Input[2, InstructionProto.InputType.Variable];
                     program.Variable[variable] = program.IO[cable, line];
                 })
@@ -234,7 +234,7 @@ namespace ProgramableNetwork
                 .Runtime((program) =>
                 {
                     var cable = program.Input[0, InstructionProto.InputType.Entity];
-                    var line = program.Input[1, InstructionProto.InputType.Integer];
+                    var line = program.Input[1];
                     var variable = program.Input[2, InstructionProto.InputType.Any];
                     program.IO[cable, line] = variable;
                 })
@@ -265,7 +265,7 @@ namespace ProgramableNetwork
                 .AritmeticOperationProtoBuilder(NewIds.Instructions.Arithmetic.Div, "Arithmetic (a / b)", (a, b) =>
                 {
                     if (b == 0)
-                        throw new ProgramException(NewIds.Texts.DivisionByZero);
+                        return 2147483647;
                     return a / b;
                 })
                 .Description("C is A / B")
@@ -293,7 +293,7 @@ namespace ProgramableNetwork
                 .AddInput("b", "B", "Result variable", InstructionProto.InputType.Variable)
                 .Runtime((program) =>
                 {
-                    var a = program.Input[0, InstructionProto.InputType.Boolean];
+                    var a = program.Input[0];
                     var b = program.Input[1, InstructionProto.InputType.Variable];
                     program.Variable[b].Boolean = !a;
                 })

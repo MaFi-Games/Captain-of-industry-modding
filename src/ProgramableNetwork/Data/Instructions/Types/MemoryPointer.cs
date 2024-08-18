@@ -9,7 +9,9 @@ namespace ProgramableNetwork
 {
     public class MemoryPointer
     {
-        public EntityContext Context { get; private set; }
+        private Computer m_computer;
+
+        public EntityContext Context => m_computer.Context;
 
         public InstructionProto.InputType Type { get; set; }
         public bool IsNull => Type == InstructionProto.InputType.None;
@@ -70,7 +72,7 @@ namespace ProgramableNetwork
         {
             return new MemoryPointer()
             {
-                Context = Context,
+                m_computer = m_computer,
                 Type = Type,
                 Data = Data,
                 SData = SData,
@@ -86,7 +88,7 @@ namespace ProgramableNetwork
 
         public void Recontext(Computer computer)
         {
-            Context = computer.Context;
+            m_computer = computer;
         }
 
         public void ValidateEntity(Computer computer)
@@ -134,13 +136,10 @@ namespace ProgramableNetwork
 
         public static implicit operator int(MemoryPointer pointer)
         {
-            if (pointer.Type != InstructionProto.InputType.Integer)
-                throw new ProgramException(NewIds.Texts.InvalidPointerType.Format(
-                        NewIds.Texts.PointerTypes[InstructionProto.InputType.Integer],
-                        NewIds.Texts.PointerTypes[pointer.Type]
-                    ));
+            if (pointer.Type == InstructionProto.InputType.Variable)
+                return pointer.m_computer.Program?.Variable[pointer.Variable];
 
-            return pointer.Integer;
+            return (int)pointer.Data;
         }
 
         public static implicit operator VariableIdx(MemoryPointer pointer)
@@ -161,12 +160,10 @@ namespace ProgramableNetwork
 
         public static implicit operator bool(MemoryPointer pointer)
         {
-            if (pointer.Type != InstructionProto.InputType.Boolean)
-                throw new ProgramException(NewIds.Texts.InvalidPointerType.Format(
-                        NewIds.Texts.PointerTypes[InstructionProto.InputType.Boolean],
-                        NewIds.Texts.PointerTypes[pointer.Type]
-                    ));
-            return pointer.Boolean;
+            if (pointer.Type == InstructionProto.InputType.Variable)
+                return pointer.m_computer.Program?.Variable[pointer.Variable];
+
+            return pointer.Data != 0;
         }
 
         public static implicit operator ProductProto(MemoryPointer pointer)
