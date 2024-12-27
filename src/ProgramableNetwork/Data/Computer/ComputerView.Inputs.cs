@@ -12,6 +12,11 @@ namespace ProgramableNetwork
     {
         private readonly List<IRefreshable> refreshed = new List<IRefreshable>();
 
+        private StackContainer instructionListHolder;
+        private ComputerInspector m_controller;
+        private bool m_repaintInstructions;
+        private Instruction m_copiedInstruction;
+
         private void UpdateUI(Dictionary<IUiElement, Action> displayChanged)
         {
             refreshed.Clear();

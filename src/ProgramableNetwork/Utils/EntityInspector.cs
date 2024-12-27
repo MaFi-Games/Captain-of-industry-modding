@@ -20,7 +20,7 @@ using Mafi.Unity.UserInterface;
 namespace Mafi.Unity
 {
 
-	public abstract class EntityInspector<TEntity, TView> : IUnityUi, IEntityInspector<TEntity>, IEntityInspector, IEntityInspectorFactory<TEntity>, IFactory<TEntity, IEntityInspector> where TEntity : class, IEntity, IRenderedEntity where TView : ItemDetailWindowView
+	public abstract class EntityInspector<TEntity, TView> : IUnityUi, IEntityInspector<TEntity>, IEntityInspector, IEntityInspectorFactory<TEntity>, IFactory<TEntity, IEntityInspector> where TEntity : class, IEntity where TView : ItemDetailWindowView
 	{
 		private Option<BuildingsAssigner> m_buildingsAssigner;
 
@@ -78,7 +78,8 @@ namespace Mafi.Unity
 			{
 				m_buildingsAssigner.Value.SetEntity(SelectedEntity);
 			}
-			Context.Highlighter.Highlight(SelectedEntity, ColorRgba.Yellow);
+			if (SelectedEntity is IRenderedEntity rendered)
+				Context.Highlighter.Highlight(rendered, ColorRgba.Yellow);
 			OnActivated();
 			WindowView.Show();
 		}
@@ -92,7 +93,8 @@ namespace Mafi.Unity
 			}
 			WindowView.Hide();
 			OnDeactivated();
-			Context.Highlighter.RemoveHighlight(SelectedEntity);
+			if (SelectedEntity is IRenderedEntity rendered)
+				Context.Highlighter.RemoveHighlight(rendered);
 			RemoveSecondaryHighlight();
 			m_selectedEntity = null;
 		}
@@ -154,7 +156,8 @@ namespace Mafi.Unity
 			}
 			if (m_restoreHighlightAfterUpgrade)
 			{
-				Context.Highlighter.Highlight(SelectedEntity, ColorRgba.Yellow);
+				if (SelectedEntity is IRenderedEntity rendered)
+					Context.Highlighter.Highlight(rendered, ColorRgba.Yellow);
 				m_restoreHighlightAfterUpgrade = false;
 			}
 			WindowView.RenderUpdate(gameTime);

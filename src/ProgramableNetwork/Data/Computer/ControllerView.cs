@@ -7,39 +7,38 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Mafi.Unity.UiFramework;
+using Mafi.Unity.UiToolkit;
 using Mafi.Core.Syncers;
 using System.Linq;
 using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
-    public partial class ComputerView : StaticEntityInspectorBase<Computer>
+    public partial class ControllerView : StaticEntityInspectorBase<Controller>
     {
-        private readonly ComputerInspector m_controller;
+        private readonly ControllerInspector m_controller;
         private readonly Dictionary<IUiElement, Action> m_displayChanges;
-        private ISyncer<Computer> selectionchanged;
-        private StackContainer instructionListHolder;
-        private Instruction m_copiedInstruction;
+        private ISyncer<Controller> selectionchanged;
         private bool m_repaintInstructions;
-        public ComputerView(ComputerInspector controller)
+        public ControllerView(ControllerInspector controller)
             : base(controller)
         {
             m_controller = controller;
             m_displayChanges = new Dictionary<IUiElement, Action>();
         }
 
-        protected override Computer Entity => m_controller.SelectedEntity;
+        protected override Controller Entity => m_controller.SelectedEntity;
 
         protected override void AddCustomItems(StackContainer itemContainer)
         {
-            MakeScrollableWithHeightLimit();
+            //MakeScrollableWithHeightLimit();
             base.AddCustomItems(itemContainer);
 
             UpdaterBuilder updaterBuilder = UpdaterBuilder.Start();
 
             var instruction = AddStatusInfoPanel();
-            updaterBuilder.Observe(() => m_controller.SelectedEntity?.Instructions?.Count ?? 0)
-                .Do(count => instruction.SetStatus(NewIds.Texts.InstructionCount.Format(count.ToString()).Value, count == 0 ? StatusPanel.State.Warning : StatusPanel.State.Ok));
+            updaterBuilder.Observe(() => m_controller.SelectedEntity?.Modules?.Count ?? 0)
+                .Do(count => instruction.SetStatus(NewTr.ModulesCount.Format(count.ToString()).Value, count == 0 ? StatusPanel.State.Warning : StatusPanel.State.Ok));
 
             var status = AddStatusInfoPanel();
             updaterBuilder.Observe(() =>
@@ -66,45 +65,14 @@ namespace ProgramableNetwork
 
             itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);
 
-            MyTabContainer tabContainer = new MyTabContainer(Builder, Style, "computerType", () => { })
-                .SetWidth(720)
-                .SetTabCellSize(new Vector2(310, 40))
-                .AppendTo(itemContainer);
-
-            StackContainer newType = Builder
-                .NewStackContainer("newType")
-                .SetWidth(720)
-                .SetItemSpacing(5);
-
-            tabContainer.AddTab(new Mafi.Localization.LocStrFormatted("New implementation"), newType);
-            AddModuleImplementation(newType, updaterBuilder);
-
-            StackContainer oldType = Builder
-                .NewStackContainer("oldType")
-                .SetStackingDirection(StackContainer.Direction.TopToBottom)
-                .SetWidth(720)
-                .SetItemSpacing(5);
-
-            tabContainer.AddTab(new Mafi.Localization.LocStrFormatted("Old implementation (change required)"), oldType);
-
-            instructionListHolder = Builder
-                .NewStackContainer("instructionHolder")
-                .SetStackingDirection(StackContainer.Direction.TopToBottom)
-                .SetBackground(Style.EntitiesMenu.MenuBg)
-                .SetInnerPadding(Offset.All(5))
-                .SetWidth(720)
-                .SetItemSpacing(5)
-                .AppendTo(oldType);
-
-            this.SetWidth(760);
-
-            itemContainer.SetSizeMode(StackContainer.SizeMode.Dynamic);
+            AddModuleImplementation(itemContainer, updaterBuilder, (width, height) =>
+            {
+                SetContentSize(width, height + 80);
+            });
 
             selectionchanged = updaterBuilder.CreateSyncer(() => m_controller.SelectedEntity);
 
-            AddInstructionAdder(oldType, updaterBuilder);
-
-            AddUpdater(updaterBuilder.Build());
+            AddUpdater(updaterBuilder.Build(SyncFrequency.Critical));
             m_repaintInstructions = true;
         }
 
@@ -122,16 +90,10 @@ namespace ProgramableNetwork
                 selectionchanged.GetValueAndReset();
 
                 m_repaintInstructions = false;
-
-                instructionListHolder.ClearAndDestroyAll();
-
-                UpdateUI(m_displayChanges);
             }
 
             if (m_controller.SelectedEntity != null)
             {
-                foreach (var r in refreshed)
-                    r.Refresh();
                 foreach (var d in new List<Action>(m_displayChanges.Values))
                     d.Invoke();
             }

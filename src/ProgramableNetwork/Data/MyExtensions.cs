@@ -7,7 +7,9 @@ using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Transports;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
+using Mafi.Unity.UserInterface;
 using Mafi.Unity.UserInterface.Style;
+using System;
 
 namespace ProgramableNetwork
 {
@@ -33,6 +35,32 @@ namespace ProgramableNetwork
         public static T SetSize<T>(this T element, int x, int y) where T : IUiElement
         {
             return element.SetSize(new UnityEngine.Vector2(x, y));
+        }
+
+
+        public static T DynamicSizeListener<T, S>(this T element, S container, Dynamic dynamicAxis)
+            where T : IDynamicSizeElement
+            where S : StackContainer
+        {
+            element.SizeChanged += (item) => {
+                try {
+                    container.UpdateItemSize(item, item.GetSize());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to update size of element: {item.GameObject?.name ?? "<no-name>"}" +
+                        $" to container: {container.GameObject?.name ?? "<no-name>"}");
+                    Console.WriteLine(e);
+                }
+             };
+            return element;
+        }
+
+        public static StackContainer AllignRight<T>(this T element, UiBuilder builder) where T : IUiElement
+        {
+            return builder.NewStackContainer(element.GameObject.name + "_invert")
+                .SetStackingDirection(StackContainer.Direction.RightToLeft)
+                .SetSizeMode(StackContainer.SizeMode.Dynamic);
         }
 
         public static string GetIcon(this IEntity entity)
@@ -86,7 +114,7 @@ namespace ProgramableNetwork
             return false;
         }
 
-        public static string SerializationInfo(this IEntity entity, Computer computer)
+        public static string SerializationInfo(this IEntity entity, Controller computer)
         {
             if (!entity.HasPosition(out Tile3f position))
                 return "";

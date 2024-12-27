@@ -22,6 +22,12 @@ namespace ProgramableNetwork
         private Dropdwn pick;
         private Btn btnAdd;
 
+        public ComputerView(IEntityInspector inspector) : base(inspector)
+        {
+        }
+
+        protected override Computer Entity { get; }
+
         private void AddInstructionAdder(StackContainer itemContainer, UpdaterBuilder updaterBuilder)
         {
             itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);

@@ -38,8 +38,8 @@ namespace ProgramableNetwork
 			//registrator.RegisterData<Terrain>();
 
 			// Use data class registration to register other protos such as machines, recipes, etc.
-			registrator.RegisterData<Instructions>();
-			registrator.RegisterData<Computers>();
+			registrator.RegisterData<Modules>();
+			registrator.RegisterData<Controllers>();
 
 			// Registers all research from this assembly. See ExampleResearchData.cs for examples.
 			registrator.RegisterDataWithInterface<IResearchNodesData>();

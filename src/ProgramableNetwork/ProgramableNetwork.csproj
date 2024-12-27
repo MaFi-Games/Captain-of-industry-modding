@@ -25,6 +25,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Data\Tabs\NewIds.Texts.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Data\Translate\NewIds.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Mafi">
       <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Mafi.dll</HintPath>

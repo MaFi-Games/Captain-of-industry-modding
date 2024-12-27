@@ -2,6 +2,6 @@
 {
     public enum ModuleStatus
     {
-        Running, Iddle, Error, Paused
+        Init = 0, Running, Iddle, Error, Paused
     }
 }

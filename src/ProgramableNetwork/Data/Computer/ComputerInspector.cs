@@ -12,7 +12,6 @@ using UnityEngine;
 
 namespace ProgramableNetwork
 {
-    [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
     public class ComputerInspector : EntityInspector<Computer, ComputerView>
     {
         private readonly ComputerView m_windowView;

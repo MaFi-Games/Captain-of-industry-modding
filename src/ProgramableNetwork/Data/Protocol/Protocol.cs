@@ -10,9 +10,11 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork
 {
-    public class ProtocolProductProto : ProductProto
+    public class ProtocolProductProto : ProductProto, IComparable<ProtocolProductProto>
     {
         public static readonly ProductType ProductType = new ProductType(typeof(ProtocolProductProto));
+
+        public new static readonly ProtocolProductProto Phantom = Proto.RegisterPhantom(new ProtocolProductProto(new ID(ProductProto.PHANTOM_PRODUCT_ID.Value + "PROTOCOL__"), Str.Empty, Gfx.Empty));
 
         public ProtocolProductProto(ID id, Str strings, Gfx graphics)
             : base(id,
@@ -33,6 +35,16 @@ namespace ProgramableNetwork
                    quantityFormatter: null,
                    new List<Tag>())
         {
+        }
+
+        public int CompareTo(ProtocolProductProto other)
+        {
+            return CompareTo((Proto)other);
+        }
+
+        public override string ToString()
+        {
+            return $"{base.Id} (protocol)";
         }
     }
 }
