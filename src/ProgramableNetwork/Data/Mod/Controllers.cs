@@ -51,7 +51,7 @@ namespace ProgramableNetwork
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
                 operationCount: 10,
                 range: 5,
-                controllerLayout: new ControllerLayout(devices: 5, memory: 5, columns: 10, rows: 5),
+                allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Controller,
                     customIconPath: NewAssets.Computers.Icons.Controller,

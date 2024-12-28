@@ -3,6 +3,7 @@ using Mafi.Collections;
 using Mafi.Collections.ImmutableCollections;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Dynamic;
+using Mafi.Core.Entities.Static;
 using Mafi.Core.Entities.Static.Layout;
 using Mafi.Core.Factory.Transports;
 using Mafi.Unity.UiFramework;
@@ -65,7 +66,7 @@ namespace ProgramableNetwork
 
         public static string GetIcon(this IEntity entity)
         {
-            if (entity is LayoutEntity positionedForGraphics)
+            if (entity is LayoutEntityBase positionedForGraphics)
                 return positionedForGraphics.Prototype.Graphics.IconPath;
 
             else if (entity is DynamicGroundEntity dynamicForGraphics)

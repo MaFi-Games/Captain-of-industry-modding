@@ -17,7 +17,7 @@ namespace ProgramableNetwork
         public int Rows { get; }
         public int Columns { get; }
         public int Range { get; }
-        public ControllerLayout ControllerLayout { get; }
+        public Func<ModuleProto, bool> AllowedModule { get; }
 
         public ControllerProto(ID id, Str strings, EntityLayout layout, EntityCosts costs, Gfx graphics,
             int operationCount,
@@ -25,8 +25,10 @@ namespace ProgramableNetwork
             int columns = 16,
             int range = 5,
             Upoints? boostCost = null,
-            Electricity? workingPower = default, Electricity? iddlePower = default,
-            IEnumerable<Tag> tags = null, ControllerLayout controllerLayout = null)
+            Electricity? workingPower = default,
+            Electricity? iddlePower = default,
+            Func<ModuleProto, bool> allowedModules = null,
+            IEnumerable<Tag> tags = null)
             : base(id, strings, layout, costs, graphics, constructionDurationPerProduct: Duration.FromSec(10), boostCost ?? 0.25.Upoints(), cannotBeBuiltByPlayer: false, isUnique: false, cannotBeReflected: false, autoBuildMiniZippers: false, doNotStartConstructionAutomatically: false, tags)
         {
             this.UsableTime = operationCount;
@@ -35,7 +37,7 @@ namespace ProgramableNetwork
             this.Rows = rows;
             this.Columns = columns;
             this.Range = range;
-            this.ControllerLayout = controllerLayout;
+            this.AllowedModule = allowedModules ?? ((module) => true);
         }
     }
 }

@@ -116,7 +116,10 @@ namespace ProgramableNetwork
 
         private void FillPicker(Dropdwn picker)
         {
-            List<ModuleProto> types = Entity.Context.ProtosDb.All<ModuleProto>().ToList();
+            List<ModuleProto> types = Entity.Context.ProtosDb
+                .All<ModuleProto>()
+                .Where(Entity.Prototype.AllowedModule)
+                .ToList();
             var typeStrings = types.Select(t => t.Strings.Name.TranslatedString).ToList();
             var selected = types.SelectIndicesWhere(t => t.Id == m_newModule?.Prototype.Id).FirstOrDefault();
             picker.AddOptions(typeStrings);
@@ -272,6 +275,7 @@ namespace ProgramableNetwork
 
             var holder = Builder.NewStackContainer("holder")
                 .SetParent(dialog, true)
+                .SetStackingDirection(StackContainer.Direction.TopToBottom)
                 .SetSizeMode(StackContainer.SizeMode.Dynamic)
                 .SetItemSpacing(5);
 
@@ -297,7 +301,7 @@ namespace ProgramableNetwork
                     .SetHeight(item.Size)
                     .AppendTo(holder);
 
-                item.Init(fieldContainer, Builder, module, updateDialog);
+                item.Init(m_controller, this, fieldContainer, Builder, module, updateDialog);
                 height += item.Size;
             }
 

@@ -46,8 +46,7 @@ namespace ProgramableNetwork
         public EntityHighlighter EntityHighlighter { get; }
         public EntityHighlighter EntityHighlighterSelectable { get; }
         public ShortcutsManager ShortcutsManager { get; }
-
-        //public Selector EntitySelectionInput { get; set; }
+        public EntitySelector EntitySelectionInput { get; set; }
 
         protected override ControllerView GetView()
         {
@@ -56,36 +55,36 @@ namespace ProgramableNetwork
 
         public override bool InputUpdate(IInputScheduler inputScheduler)
         {
-            //if (EntitySelectionInput != null)
-            //{
-            //    //var position = TerrainCursor.Tile3f.ToVector3();
-            //    // set line view endpoint
-            //
-            //    if (ShortcutsManager.IsPrimaryActionDown)
-            //    {
-            //        Tile3f source = SelectedEntity.Position3f;
-            //
-            //        Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.Instruction.EntityFilter((Entity)e));
-            //        if (pickedEntity.HasValue
-            //            && pickedEntity.Value.HasPosition(out Tile3f target)
-            //            && (source - target).Length <= EntitySelectionInput.Instruction.EntitySearchDistance
-            //            )
-            //        {
-            //            EntitySelectionInput.MemoryPointer.Entity = pickedEntity.Value;
-            //            EntitySelectionInput.Refresh();
-            //            EntitySelectionInput = null;
-            //            return true;
-            //        }
-            //        m_invalidOpSound.Play();
-            //        return true;
-            //    }
-            //    if (ShortcutsManager.IsSecondaryActionDown)
-            //    {
-            //        EntitySelectionInput.Refresh();
-            //        EntitySelectionInput = null;
-            //        return true;
-            //    }
-            //}
+            if (EntitySelectionInput != null)
+            {
+                //var position = TerrainCursor.Tile3f.ToVector3();
+                // set line view endpoint
+
+                if (ShortcutsManager.IsPrimaryActionDown)
+                {
+                    Tile3f source = SelectedEntity.Position3f;
+
+                    Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.EntityFilter((Entity)e));
+                    if (pickedEntity.HasValue
+                        && pickedEntity.Value.HasPosition(out Tile3f target)
+                        && (source - target).Length <= EntitySelectionInput.EntitySearchDistance
+                        )
+                    {
+                        EntitySelectionInput.Entity = pickedEntity.Value;
+                        EntitySelectionInput.Refresh();
+                        EntitySelectionInput = null;
+                        return true;
+                    }
+                    m_invalidOpSound.Play();
+                    return true;
+                }
+                if (ShortcutsManager.IsSecondaryActionDown)
+                {
+                    EntitySelectionInput.Refresh();
+                    EntitySelectionInput = null;
+                    return true;
+                }
+            }
             return base.InputUpdate(inputScheduler);
         }
 
@@ -93,60 +92,60 @@ namespace ProgramableNetwork
         {
             base.RenderUpdate(gameTime);
 
-            //if (EntitySelectionInput != null)
-            //{
-            //    if (!m_highlightSearched)
-            //    {
-            //        m_highlightSearched = true;
-            //
-            //        Tile3f source = SelectedEntity.Position3f;
-            //        Fix32 innerDistance = EntitySelectionInput.Instruction.EntitySearchDistance;
-            //        Fix32 ringDistance = EntitySelectionInput.Instruction.EntitySearchDistance + 2;
-            //
-            //        Context.EntitiesManager.GetAllEntitiesOfType<Entity>()
-            //            .Where(e => EntitySelectionInput.Instruction.EntityFilter(e))
-            //            .Where(e => e is IEntityWithPosition && e is IRenderedEntity)
-            //            .Cast<IEntityWithPosition>()
-            //            .Where(e => (source - e.Position3f).Length <= innerDistance)
-            //            .Cast<IRenderedEntity>()
-            //            .Call(e => EntityHighlighterSelectable.Highlight(e, ColorRgba.Green))
-            //            .ToList();
-            //    }
-            //
-            //    Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.Instruction.EntityFilter((Entity)e));
-            //
-            //    if (pickedEntity.IsNone || m_hoveredEntity != null)
-            //    {
-            //        EntityHighlighter.RemoveHighlight(m_hoveredEntity);
-            //    }
-            //
-            //    if (pickedEntity.HasValue)
-            //    {
-            //        m_hoveredEntity = pickedEntity.Value;
-            //        Tile3f source = SelectedEntity.Position3f;
-            //
-            //        if (!pickedEntity.Value.HasPosition(out Tile3f target)
-            //            || (source - target).Length > EntitySelectionInput.Instruction.EntitySearchDistance)
-            //        {
-            //            EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.Red);
-            //        }
-            //        else
-            //        {
-            //            EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.LightBlue);
-            //        }
-            //        return;
-            //    }
-            //}
-            //if (EntitySelectionInput == null && m_hoveredEntity != null)
-            //{
-            //    EntityHighlighter.RemoveHighlight(m_hoveredEntity);
-            //    m_hoveredEntity = null;
-            //}
-            //if (EntitySelectionInput == null && m_highlightSearched)
-            //{
-            //    EntityHighlighterSelectable.ClearAllHighlights();
-            //    m_highlightSearched = false;
-            //}
+            if (EntitySelectionInput != null)
+            {
+                if (!m_highlightSearched)
+                {
+                    m_highlightSearched = true;
+            
+                    Tile3f source = SelectedEntity.Position3f;
+                    Fix32 innerDistance = EntitySelectionInput.EntitySearchDistance;
+                    Fix32 ringDistance = EntitySelectionInput.EntitySearchDistance + 2;
+            
+                    Context.EntitiesManager.GetAllEntitiesOfType<Entity>()
+                        .Where(e => EntitySelectionInput.EntityFilter(e))
+                        .Where(e => e is IEntityWithPosition && e is IRenderedEntity)
+                        .Cast<IEntityWithPosition>()
+                        .Where(e => (source - e.Position3f).Length <= innerDistance)
+                        .Cast<IRenderedEntity>()
+                        .Call(e => EntityHighlighterSelectable.Highlight(e, ColorRgba.Green))
+                        .ToList();
+                }
+            
+                Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.EntityFilter((Entity)e));
+            
+                if (pickedEntity.IsNone || m_hoveredEntity != null)
+                {
+                    EntityHighlighter.RemoveHighlight(m_hoveredEntity);
+                }
+            
+                if (pickedEntity.HasValue)
+                {
+                    m_hoveredEntity = pickedEntity.Value;
+                    Tile3f source = SelectedEntity.Position3f;
+            
+                    if (!pickedEntity.Value.HasPosition(out Tile3f target)
+                        || (source - target).Length > EntitySelectionInput.EntitySearchDistance)
+                    {
+                        EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.Red);
+                    }
+                    else
+                    {
+                        EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.LightBlue);
+                    }
+                    return;
+                }
+            }
+            if (EntitySelectionInput == null && m_hoveredEntity != null)
+            {
+                EntityHighlighter.RemoveHighlight(m_hoveredEntity);
+                m_hoveredEntity = null;
+            }
+            if (EntitySelectionInput == null && m_highlightSearched)
+            {
+                EntityHighlighterSelectable.ClearAllHighlights();
+                m_highlightSearched = false;
+            }
         }
 
         protected override void OnDeactivated()

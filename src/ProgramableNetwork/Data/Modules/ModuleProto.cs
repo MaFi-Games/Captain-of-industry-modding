@@ -14,6 +14,7 @@ using Mafi.Core.Products;
 using Mafi.Base;
 using Mafi.Unity.UserInterface.Style;
 using Mafi.Unity.UiFramework.Components;
+using Mafi.Core.Entities.Static;
 
 namespace ProgramableNetwork
 {
@@ -156,10 +157,11 @@ namespace ProgramableNetwork
         public string IconPath => Graphics.IconPath;
 
         public string Symbol { get; }
+        public List<StaticEntityProto.ID> AllowedDevices { get; }
 
         public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Action<Module> action, Action<Module> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
-            Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol) : base(id, strings, costs, gfx, tags)
+            Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
             Symbol = m_symbol;
@@ -176,6 +178,7 @@ namespace ProgramableNetwork
             Graphics = gfx;
             DisplayFunction = m_displayFunction;
             WidthFunction = m_widthFunction;
+            AllowedDevices = m_allowedDevices;
             SetAvailability(false);
         }
 
@@ -199,6 +202,7 @@ namespace ProgramableNetwork
             private readonly Gfx m_gfx;
             private readonly string m_symbol;
             private readonly List<IField> m_fields = new List<IField>();
+            private readonly List<StaticEntityProto.ID> m_allowedDevices;
             private bool m_customBuild;
             private bool m_customMaintenance;
             public Action<Module, StackContainer> m_displayFunction { get; }
@@ -215,6 +219,7 @@ namespace ProgramableNetwork
                 m_costs = new EntityCostsTpl.Builder();
                 m_gfx = gfx;
                 m_symbol = symbol;
+                m_allowedDevices = new List<StaticEntityProto.ID>();
             }
 
             public ModuleProto BuildAndAdd()
@@ -248,7 +253,8 @@ namespace ProgramableNetwork
                     m_fields,
                     m_displayFunction,
                     m_widthFunction,
-                    m_symbol
+                    m_symbol,
+                    m_allowedDevices
                 ));
             }
 
@@ -268,6 +274,17 @@ namespace ProgramableNetwork
             {
                 m_outputs.Add(new ModuleConnectorProto(id, m_id.Output(id, name)));
                 return this;
+            }
+
+            public Builder AddDevice(StaticEntityProto.ID device)
+            {
+                m_allowedDevices.Add(device);
+                return this;
+            }
+
+            public Builder AddControllerDevice()
+            {
+                return AddDevice(NewIds.Controllers.Controller);
             }
 
             public Builder UsePower(Electricity usedPower)
@@ -333,9 +350,34 @@ namespace ProgramableNetwork
                 return this;
             }
 
-            public Builder AddNumberField(string id, string name, int defaultValue = 0)
+            public Builder AddInt32Field(string id, string name, int defaultValue = 0)
             {
-                m_fields.Add(new NumberField(id, name, defaultValue));
+                m_fields.Add(new NumberField<int>(id, name, defaultValue));
+                return this;
+            }
+
+            public Builder AddInt64Field(string id, string name, long defaultValue = 0)
+            {
+                m_fields.Add(new NumberField<long>(id, name, defaultValue));
+                return this;
+            }
+
+            public Builder AddStringField(string id, string name, string defaultValue = "")
+            {
+                m_fields.Add(new StringField(id, name, defaultValue));
+                return this;
+            }
+
+            public Builder AddEntityField(string id, string name, Func<Module, IEntity, bool> entitySelector = null, Fix32? distance = null)
+            {
+                m_fields.Add(new EntityField(id, name, entitySelector, distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddEntityField<T>(string id, string name, Fix32? distance = null)
+                where T : IEntity
+            {
+                m_fields.Add(new EntityField(id, name, (module, entity) => entity is T, distance ?? 5.ToFix32()));
                 return this;
             }
         }
@@ -343,9 +385,9 @@ namespace ProgramableNetwork
 
     public static class ModuleProtoExtensions
     {
-        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, ModuleProto.Gfx gfx, string description = "")
+        public static ModuleProto.Builder ModuleBuilderStart(this ProtoRegistrator registrator, string id, string name, string symbol, string gfx, string description = "")
         {
-            return new ModuleProto.Builder(registrator, id, name, description, symbol, gfx);
+            return new ModuleProto.Builder(registrator, id, name, description, symbol, new ModuleProto.Gfx(gfx));
         }
 
         public static Proto.Str Input(this ModuleProto.ID operation, string name, string text, string description = "")
