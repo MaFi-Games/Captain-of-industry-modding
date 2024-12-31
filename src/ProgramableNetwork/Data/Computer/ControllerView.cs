@@ -57,9 +57,9 @@ namespace ProgramableNetwork
                         status.SetStatusWorking();
                 });
 
-            var instructionIndex = AddStatusInfoPanel();
-            updaterBuilder.Observe(() => m_controller.SelectedEntity?.CurrentInstruction ?? 0)
-                .Do(instr => instructionIndex.SetStatus($"{instr:D3}", StatusPanel.State.Ok));
+            var decription = AddStatusInfoPanel();
+            updaterBuilder.Observe(() => m_decription ?? Mafi.Localization.LocStr.Empty)
+                .Do(instr => decription.SetStatus("Pin: " + instr.TranslatedString, StatusPanel.State.Ok));
 
             AddGeneralPriorityPanel(m_controller.Context, () => m_controller.SelectedEntity);
 

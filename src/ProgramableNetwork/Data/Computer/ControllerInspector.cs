@@ -1,12 +1,15 @@
 ﻿using Mafi;
 using Mafi.Core;
 using Mafi.Core.Entities;
+using Mafi.Core.Entities.Static;
+using Mafi.Core.Factory.Transports;
 using Mafi.Core.Input;
 using Mafi.Unity;
 using Mafi.Unity.Entities;
 using Mafi.Unity.InputControl;
 using Mafi.Unity.InputControl.Cursors;
 using Mafi.Unity.InputControl.Inspectors;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -66,9 +69,7 @@ namespace ProgramableNetwork
 
                     Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.EntityFilter((Entity)e));
                     if (pickedEntity.HasValue
-                        && pickedEntity.Value.HasPosition(out Tile3f target)
-                        && (source - target).Length <= EntitySelectionInput.EntitySearchDistance
-                        )
+                        && IsWithingDistance(source, pickedEntity.Value, EntitySelectionInput.EntitySearchDistance))
                     {
                         EntitySelectionInput.Entity = pickedEntity.Value;
                         EntitySelectionInput.Refresh();
@@ -100,15 +101,12 @@ namespace ProgramableNetwork
             
                     Tile3f source = SelectedEntity.Position3f;
                     Fix32 innerDistance = EntitySelectionInput.EntitySearchDistance;
-                    Fix32 ringDistance = EntitySelectionInput.EntitySearchDistance + 2;
             
                     Context.EntitiesManager.GetAllEntitiesOfType<Entity>()
-                        .Where(e => EntitySelectionInput.EntityFilter(e))
                         .Where(e => e is IEntityWithPosition && e is IRenderedEntity)
-                        .Cast<IEntityWithPosition>()
-                        .Where(e => (source - e.Position3f).Length <= innerDistance)
-                        .Cast<IRenderedEntity>()
-                        .Call(e => EntityHighlighterSelectable.Highlight(e, ColorRgba.Green))
+                        .Where(e => EntitySelectionInput.EntityFilter(e))
+                        .Where(e => IsWithingDistance(source, e as IRenderedEntity, innerDistance))
+                        .Call(e => EntityHighlighterSelectable.Highlight(e as IRenderedEntity, ColorRgba.Green))
                         .ToList();
                 }
             
@@ -124,14 +122,13 @@ namespace ProgramableNetwork
                     m_hoveredEntity = pickedEntity.Value;
                     Tile3f source = SelectedEntity.Position3f;
             
-                    if (!pickedEntity.Value.HasPosition(out Tile3f target)
-                        || (source - target).Length > EntitySelectionInput.EntitySearchDistance)
+                    if (IsWithingDistance(source, pickedEntity.Value, EntitySelectionInput.EntitySearchDistance))
                     {
-                        EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.Red);
+                        EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.LightBlue);
                     }
                     else
                     {
-                        EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.LightBlue);
+                        EntityHighlighter.HighlightOnly(m_hoveredEntity, ColorRgba.Red);
                     }
                     return;
                 }
@@ -146,6 +143,16 @@ namespace ProgramableNetwork
                 EntityHighlighterSelectable.ClearAllHighlights();
                 m_highlightSearched = false;
             }
+        }
+
+        private bool IsWithingDistance(Tile3f source, IRenderedEntity target, Fix32 searchDistance)
+        {
+            if (target is IStaticEntity entity && entity.OccupiedTiles
+                .Select(t => entity.Position3f.AddX(t.RelativeX).AddY(t.RelativeY))
+                .FirstOrDefault(t => (source - t).Length <= searchDistance) != Tile3f.Zero)
+                return true;
+
+            return false;
         }
 
         protected override void OnDeactivated()

@@ -7,13 +7,13 @@ namespace ProgramableNetwork
 {
     public class StringField : IField
     {
-        private string id;
+        public string Id { get; }
         private string name;
         public string Default { get; }
 
         public StringField(string id, string name, string defaultValue)
         {
-            this.id = id;
+            this.Id = id;
             this.name = name;
             this.Default = defaultValue;
         }
@@ -44,18 +44,12 @@ namespace ProgramableNetwork
 
             numberEditor.SetOnValueChangedAction(() =>
             {
-                module.StringData[Name] = numberEditor.GetText().ToString();
+                module.Field[Id] = numberEditor.GetText().ToString();
             });
-            
-            if (module.StringData.TryGetValue(Name, out var num))
-            {
-                numberEditor.SetText(num);
-            }
-            else
-            {
-                numberEditor.SetText(Default.ToString());
-                module.StringData[Name] = Default.ToString();
-            }
+
+            string value = module.Field[Id, Default];
+            numberEditor.SetText(value);
+            module.Field[Id] = value;
         }
     }
 }

@@ -28,6 +28,9 @@ namespace ProgramableNetwork
         private StackContainer m_newDialog;
         private StackContainer m_editDialog;
         private StackContainer m_container;
+        private LocStr? m_decription;
+
+        public ModuleConnector OutputConnection { get; set; }
 
         private void AddModuleImplementation(StackContainer itemsContainer, UpdaterBuilder updaterBuilder, Action<float, float> setSize)
         {
@@ -64,6 +67,9 @@ namespace ProgramableNetwork
                 m_targetColumn = -1;
                 m_newModule = null;
                 m_editModule = null;
+                m_decription = null;
+                OutputConnection = null;
+                m_controller.EntityHighlighterSelectable.ClearAllHighlights();
             });
         }
 
@@ -167,9 +173,6 @@ namespace ProgramableNetwork
                 .SetHeight(20)
                 .AppendTo(m_editDialog);
 
-            moduleName.SetText(Entity.Prototype.Strings.Name.AsFormatted);
-            moduleName.RectTransform.ForceUpdateRectTransforms();
-
             CreateSettingsPanel(m_editDialog, () => m_editModule, () => CreateEditDialog(module));
 
             Builder.NewBtnGeneral("dialogEditRemove")
@@ -212,11 +215,6 @@ namespace ProgramableNetwork
             m_moduleLayout.SetSize(Entity.Prototype.Columns * 20, Entity.Prototype.Rows * 80 + (Entity.Prototype.Rows - 1) * 10);
             m_moduleLayout.SetSizeMode(StackContainer.SizeMode.Dynamic);
 
-            if (modules == null || modules.Count == 0)
-            {
-                return;
-            }
-
             for (int i = 0; i < Entity.Rows.Count; i++)
             {
                 var rowElement = Builder
@@ -234,7 +232,7 @@ namespace ProgramableNetwork
 
                     bool selected = i == m_targetRow && j == m_targetColumn;
 
-                    var module = Entity.Modules
+                    var module = (Entity.Modules ?? new Lyst<Module>())
                         .AsEnumerable()
                         .FirstOrDefault(m => m.Id == row[j].ModuleId);
 
@@ -243,7 +241,8 @@ namespace ProgramableNetwork
                         AddFreeSlot(rowElement, i, j, selected);
                         continue;
                     }
-                    new ComputerModuleView(Builder, module, m_controller, this, selected).AppendTo(rowElement);
+                    new ComputerModuleView(Builder, module, m_controller, this, selected, () => RedrawComponents(modules))
+                        .AppendTo(rowElement);
                 }
 
                 rowElement.AppendTo(m_moduleLayout);
@@ -336,6 +335,7 @@ namespace ProgramableNetwork
                 m_editModule = module;
                 m_targetRow = targetRow;
                 m_targetColumn = targetColumn;
+                m_newModule = null;
                 return true;
             }
             else
@@ -380,7 +380,7 @@ namespace ProgramableNetwork
             private readonly ControllerView m_computerView;
             private readonly List<IUiUpdater> m_updaters = new List<IUiUpdater>();
 
-            public ComputerModuleView(UiBuilder uiBuilder, Module module, ControllerInspector controller, ControllerView computerView, bool selected)
+            public ComputerModuleView(UiBuilder uiBuilder, Module module, ControllerInspector controller, ControllerView computerView, bool selected, Action refresh)
                 : base(uiBuilder, "moduleView_" + module.Id)
             {
                 this.m_module = module;
@@ -400,9 +400,11 @@ namespace ProgramableNetwork
                     .SetParent(this, true)
                     .SetSize(width * 20, 20)
                     .SetBackground(ColorRgba.DarkGreen)
-                    .SetStackingDirection(Direction.LeftToRight);
+                    .SetSizeMode(SizeMode.StaticCenterAligned)
+                    .SetStackingDirection(Direction.RightToLeft);
+                AddInputs(uiBuilder, inputsPanel, module, updater, refresh);
 
-                inputsPanel/*.AllignRight(uiBuilder)*/.AppendTo(this);
+                inputsPanel.AppendTo(this);
 
                 // Add Field panel
                 Btn fieldsPanel = uiBuilder.NewBtnGeneral(name + "_edit")
@@ -417,143 +419,88 @@ namespace ProgramableNetwork
                 if (selected)
                     fieldsPanel.SetButtonStyle(uiBuilder.Style.Global.GeneralBtnActive);
 
-                fieldsPanel/*.AllignRight(uiBuilder)*/.AppendTo(this);
+                fieldsPanel.AppendTo(this);
 
                 // Add Ouptut panel
                 StackContainer outputsPanel = uiBuilder.NewStackContainer(name + "_outputs")
                     .SetParent(this, true)
                     .SetSize(width * 20, 20)
                     .SetBackground(ColorRgba.DarkRed)
-                    .SetStackingDirection(Direction.LeftToRight);
+                    .SetSizeMode(SizeMode.StaticCenterAligned)
+                    .SetStackingDirection(Direction.RightToLeft);
+                AddOutputs(uiBuilder, outputsPanel, module, updater, refresh);
 
-                outputsPanel/*.AllignRight(uiBuilder)*/.AppendTo(this);
-
-                //int panel = 0;
-
-                //int inputStartIndex = width * 4 - (width - 1);
-                //int inputIndex = 0;
-                //for (int i = 0; i < endIndex; i++)
-                //{
-                //    if (i == 0)
-                //    {
-                //        uiBuilder.NewPanel("ULC")
-                //            .SetSize(5, 20)
-                //            .AppendTo(this);
-                //    }
-                //    else if (i == (endIndex - 1))
-                //    {
-                //        uiBuilder.NewPanel("URC")
-                //            .SetSize(5, 20)
-                //            .AppendTo(this);
-                //    }
-                //    else if (i == inputStartIndex)
-                //    {
-                //        uiBuilder.NewBtnGeneral("IN_Connector_" + inputIndex)
-                //            .SetSize(5, 20)
-                //            // TODO connection
-                //            .SetText(inputIndex.ToString())
-                //            .AppendTo(this);
-                //    }
-                //    else if (i == inputStartIndex + 1)
-                //    {
-                //        var led = uiBuilder.NewPanel("IN_LED_" + inputIndex)
-                //            .SetSize(5, 20)
-                //            .SetBackground(Mafi.ColorRgba.Black)
-                //            .AppendTo(this);
-
-                //        int v = i;
-                //        var ledUpdater = UpdaterBuilder.Start();
-                //        ledUpdater.Observe(() => module.StatusIn[module.Prototype.Inputs[v].Id])
-                //            .Do((status) =>
-                //            {
-                //                if (status == ModuleStatus.Error)
-                //                    led.SetBackground(Mafi.ColorRgba.Red);
-                //                else if (status == ModuleStatus.Running)
-                //                    led.SetBackground(Mafi.ColorRgba.Green);
-                //                else if (status == ModuleStatus.Iddle)
-                //                    led.SetBackground(Mafi.ColorRgba.Blue);
-                //                else if (status == ModuleStatus.Paused)
-                //                    led.SetBackground(Mafi.ColorRgba.Yellow);
-                //                else
-                //                    led.SetBackground(Mafi.ColorRgba.Black);
-                //            });
-
-                //        inputStartIndex += 4;
-                //        inputIndex++;
-                //    }
-                //    else
-                //    {
-                //        uiBuilder.NewPanel("fill_" + panel++)
-                //            .SetSize(5, 20)
-                //            .AppendTo(this);
-                //    }
-                //}
-
-
-                //int outputStartIndex = endIndex - (module.Prototype.Inputs.Count * 4 - 1);
-                //int outputIndex = 0;
-                //for (int i = 0; i < endIndex; i++)
-                //{
-                //    if (i == 0)
-                //    {
-                //        uiBuilder.NewPanel("BLC")
-                //            .SetSize(5, 20)
-                //            .AppendTo(this);
-                //    }
-                //    else if (i == (endIndex - 1))
-                //    {
-                //        uiBuilder.NewPanel("BRC")
-                //            .SetSize(5, 20)
-                //            .AppendTo(this);
-                //    }
-                //    else if (i == inputStartIndex)
-                //    {
-                //        uiBuilder.NewBtnGeneral("OUT_Connector_" + inputIndex)
-                //            .SetSize(5, 20)
-                //            // TODO connection
-                //            .SetText(inputIndex.ToString())
-                //            .AppendTo(this);
-                //    }
-                //    else if (i == inputStartIndex + 1)
-                //    {
-                //        var led = uiBuilder.NewPanel("OUT_LED_" + inputIndex)
-                //            .SetSize(5, 20)
-                //            .SetBackground(Mafi.ColorRgba.Black)
-                //            .AppendTo(this);
-
-                //        int v = i;
-                //        var ledUpdater = UpdaterBuilder.Start();
-                //        ledUpdater.Observe(() => module.StatusOut[module.Prototype.Inputs[v].Id])
-                //            .Do((status) =>
-                //            {
-                //                if (status == ModuleStatus.Error)
-                //                    led.SetBackground(Mafi.ColorRgba.Red);
-                //                else if (status == ModuleStatus.Running)
-                //                    led.SetBackground(Mafi.ColorRgba.Green);
-                //                else if (status == ModuleStatus.Iddle)
-                //                    led.SetBackground(Mafi.ColorRgba.Blue);
-                //                else if (status == ModuleStatus.Paused)
-                //                    led.SetBackground(Mafi.ColorRgba.Yellow);
-                //                else
-                //                    led.SetBackground(Mafi.ColorRgba.Black);
-                //            });
-
-                //        inputStartIndex += 4;
-                //        inputIndex++;
-                //    }
-                //    else
-                //    {
-                //        uiBuilder.NewPanel("fill_" + panel++)
-                //            .SetSize(5, 20)
-                //            .AppendTo(this);
-                //    }
-                //}
+                outputsPanel.AppendTo(this);
 
                 var updaterBuilt = updater.Build();
                 m_updaters.Add(updaterBuilt);
                 computerView.AddUpdater(updaterBuilt);
 
                 this.RectTransform.ForceUpdateRectTransforms();
+            }
+
+            private void AddInputs(UiBuilder builder, StackContainer inputsPanel, Module module, UpdaterBuilder updater, Action refresh)
+            {
+                var inputs = module.Prototype.Inputs;
+                for (int i = inputs.Count - 1; i >= 0; i--)
+                {
+                    var input = inputs[i];
+                    bool isConnected = module.InputModules.ContainsKey(input.Id);
+
+                    builder.NewBtnGeneral($"{module.Id}_input_{i}")
+                        .SetText("O")
+                        .SetButtonStyle((
+                                isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
+                            ).Extend(backgroundClr: ColorRgba.DarkGreen))
+                        .SetSize(20, 20)
+                        .OnClick(() =>
+                        {
+                            if (m_computerView.OutputConnection == null)
+                            {
+                                builder.AudioDb.GetSharedAudio(builder.Audio.InvalidOp).Play();
+                            }
+                            else
+                            {
+                                module.InputModules[input.Id] = m_computerView.OutputConnection;
+                                m_computerView.OutputConnection = null;
+                                refresh();
+                            }
+                        })
+                        .SetOnMouseEnterLeaveActions(
+                            () => { m_computerView.m_decription = input.String.Name; },
+                            () => { }
+                        )
+                        .AppendTo(inputsPanel);
+                }
+            }
+
+            private void AddOutputs(UiBuilder builder, StackContainer inputsPanel, Module module, UpdaterBuilder updater, Action refresh)
+            {
+                var outputs = module.Prototype.Outputs;
+                for (int i = outputs.Count - 1; i >= 0; i--)
+                {
+                    var output = outputs[i];
+                    bool isConnected = module.Controller.Modules
+                        .AsEnumerable()
+                        .Where(m => m.InputModules.Count > 0)
+                        .SelectMany(m => m.InputModules)
+                        .Select(p => p.Value)
+                        .FirstOrDefault(c => c.ModuleId == module.Id
+                                          && c.OutputId == output.Id) != null;
+
+                    builder.NewBtnGeneral($"{module.Id}_output_{i}")
+                        .SetText("O")
+                        .SetButtonStyle((
+                                isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
+                            ).Extend(backgroundClr: ColorRgba.DarkRed))
+                        .SetSize(20, 20)
+                        .OnClick(() => m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id))
+                        .SetOnMouseEnterLeaveActions(
+                            () => { m_computerView.m_decription = output.String.Name; },
+                            () => { }
+                        )
+                        .AppendTo(inputsPanel);
+                }
             }
 
             public void Remove()

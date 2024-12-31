@@ -48,41 +48,29 @@ namespace ProgramableNetwork
                 {
                     if (int.TryParse(numberEditor.GetText(), out int value))
                     {
-                        module.NumberData[Name] = value;
+                        module.Field[Id] = value;
                     }
                 }
                 else if (typeof(T) == typeof(long))
                 {
                     if (long.TryParse(numberEditor.GetText(), out long value))
                     {
-                        module.StringData[Name] = value.ToString();
+                        module.Field[Id] = value.ToString();
                     }
                 }
             });
 
             if (typeof(T) == typeof(int))
             {
-                if (module.NumberData.TryGetValue(Name, out var num))
-                {
-                    numberEditor.SetText(num.ToString());
-                }
-                else
-                {
-                    numberEditor.SetText(Default.ToString());
-                    module.NumberData[Name] = (int)(object)Default;
-                }
+                int value = module.Field[Id, (int)(object)Default];
+                numberEditor.SetText(value.ToString());
+                module.Field[Name] = value;
             }
             else if (typeof(T) == typeof(long))
             {
-                if (module.StringData.TryGetValue(Name, out var num))
-                {
-                    numberEditor.SetText(num);
-                }
-                else
-                {
-                    numberEditor.SetText(Default.ToString());
-                    module.StringData[Name] = Default.ToString();
-                }
+                string value = module.Field[Id, ((long)(object)Default).ToString()];
+                numberEditor.SetText(value);
+                module.Field[Name] = value;
             }
         }
     }

@@ -31,12 +31,6 @@ namespace ProgramableNetwork
 
         public void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
         {
-            // TODO selector of entity
-            // use id for store data:
-            // NumberData <id>_Id -> Mafi.Core.EntityId.value : id of game entity
-            // StringData <id>_Name -> Mafi.Proto.Id.value : name of prototype for search
-            // more variables may be added later
-
             fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
             fieldContainer.SetHeight(40);
 
@@ -48,7 +42,7 @@ namespace ProgramableNetwork
                 .SetText(Name)
                 .AppendTo(fieldContainer);
 
-            new Picker(uiBuilder, module, id + "_Id", entitySelector, distance, updateDialog, parentWindow, inspector)
+            new Picker(uiBuilder, module, id, entitySelector, distance, updateDialog, parentWindow, inspector)
                 .AppendTo(fieldContainer);
         }
 
@@ -68,7 +62,7 @@ namespace ProgramableNetwork
             private Btn m_btnPreview;
 
             public Picker(UiBuilder builder, Module module, string dataName, Func<Module, IEntity, bool> filter, Fix32 distance, Action refresh, WindowView parentWindow, ControllerInspector inspector)
-                : base(builder, "product_" + DateTime.Now.Ticks)
+                : base(builder, "entity_" + DateTime.Now.Ticks)
             {
                 m_builder = builder;
                 m_filter = filter;
@@ -96,7 +90,7 @@ namespace ProgramableNetwork
 
                 m_selectionButton = m_builder
                     .NewBtnGeneral("item_vehicle_" + DateTime.Now.Ticks)
-                    .SetText(NewIds.Texts.Tools.Pick)
+                    .SetText("Pick")
                     .SetSize(40, 40)
                     .OnClick(PickEntity)
                     .AppendTo(m_btnPreviewHolder);
@@ -110,7 +104,7 @@ namespace ProgramableNetwork
                 m_inspector.EntitySelectionInput = null;
 
                 if (m_inspectorContext.EntitiesManager.TryGetEntity(
-                    new Mafi.Core.EntityId(m_module.NumberData.TryGetValue(m_dataName, out int id) ? id : 0),
+                    new Mafi.Core.EntityId(m_module.Field[m_dataName, 0]),
                     out Entity entity
                     ))
                 {
@@ -163,7 +157,7 @@ namespace ProgramableNetwork
             {
                 m_selectionButton.SetButtonStyle(m_builder.Style.Global.GeneralBtnActive);
                 m_inspector.EntitySelectionInput = new EntitySelector(m_module, m_distance, m_refresh, m_filter,
-                    (entity) => m_module.NumberData[m_dataName] = entity.Id.Value);
+                    (entity) => m_module.Field[m_dataName] = entity.Id.Value);
             }
         }
     }

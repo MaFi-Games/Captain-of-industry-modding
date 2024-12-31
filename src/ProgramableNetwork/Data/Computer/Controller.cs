@@ -47,15 +47,17 @@ namespace ProgramableNetwork
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
             Modules = new Lyst<Module>();
             Rows = new Lyst<Lyst<ModulePlacement>>();
-            for (int i = 0; i < proto.Rows; i++)
+            for (int i = 0; i < Prototype.Rows; i++)
             {
                 var row = new Lyst<ModulePlacement>();
-                for (int j = 0; j < proto.Columns; j++)
+                for (int j = 0; j < Prototype.Columns; j++)
                 {
                     row.Add((ModulePlacement)(0, true));
                 }
                 Rows.Add(row);
             }
+
+            Log.Info($"Created with {Prototype.Rows} rows, {Prototype.Columns} columns");
         }
 
         [DoNotSave(0, null)]
@@ -115,6 +117,8 @@ namespace ProgramableNetwork
         [OnlyForSaveCompatibility(null)]
         private void initContexts(int saveVersion)
         {
+            Log.Info($"Initialize context after load");
+
             Prototype = Context.ProtosDb.Get<ControllerProto>(m_protoId).ValueOrThrow("Invalid controller proto: " + m_protoId);
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
@@ -130,6 +134,27 @@ namespace ProgramableNetwork
                     m.Controller = this;
                     m.Context = Context;
                     m.initContexts(saveVersion);
+                }
+            }
+
+            for (int i = 0; i < Prototype.Rows; i++)
+            {
+                if (i == Rows.Count)
+                {
+                    var row = new Lyst<ModulePlacement>();
+                    for (int j = 0; j < Prototype.Columns; j++)
+                    {
+                        row.Add((ModulePlacement)(0, true));
+                    }
+                    Rows.Add(row);
+                }
+                else
+                {
+                    var row = Rows[i];
+                    for (int j = row.Count; j < Prototype.Columns; j++)
+                    {
+                        row.Add((ModulePlacement)(0, true));
+                    }
                 }
             }
         }
@@ -167,6 +192,7 @@ namespace ProgramableNetwork
             Modules = Lyst<Module>.Deserialize(reader);
             Rows = Lyst<Lyst<ModulePlacement>>.Deserialize(reader);
 
+            Log.Info($"Deserialized with {Modules.Count} modules and {Rows.Count} rows");
             reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Normal);
         }
 
@@ -277,6 +303,32 @@ namespace ProgramableNetwork
         {
             // This will run the "compiled tree" per tick
             // the tree is recompiled when edited only or when construct
+            Dictionary<long, Module> cache = Modules.ToDictionary(m => m.Id);
+
+            // Copy all outputs to inputs
+            foreach (Module module in Modules)
+            {
+                foreach (KeyValuePair<string, ModuleConnector> item in module.InputModules)
+                {
+                    if (cache.TryGetValue(item.Value.ModuleId, out Module connected))
+                    {
+                        module.Input[item.Key] = connected.Output[item.Value.OutputId, 0];
+                    }
+                }
+            }
+
+            // Execute all modules
+            foreach (Module module in Modules)
+            {
+                try
+                {
+                    module.Execute();
+                }
+                catch (Exception)
+                {
+                    // ignore exception
+                }
+            }
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
@@ -298,8 +350,5 @@ namespace ProgramableNetwork
 
         [DoNotSave()]
         public bool IsCargoAffectedByGeneralPriority => false;
-
-        [DoNotSave()]
-        public ImmutableArray<IoPort> Ports { get; set; }
     }
 }

@@ -49,6 +49,7 @@ namespace ProgramableNetwork
             Controller = entity;
             NumberData = new Dict<string, int>();
             StringData = new Dict<string, string>();
+            InputModules = new Dict<string, ModuleConnector>();
         }
 
         public Controller Controller { get; set; }
@@ -103,14 +104,7 @@ namespace ProgramableNetwork
         }
 
         [DoNotSave(0, null)]
-        public bool IsInputModule => Prototype.IsInputModule;
-        [DoNotSave(0, null)]
-        public bool IsOutputModule => Prototype.IsOutputModule;
-
-        [DoNotSave(0, null)]
-        public ModuleConnector[] InputModules { get; } // todo get by module id, cached
-        [DoNotSave(0, null)]
-        public ModuleConnector[] OuputModules { get; } // todo get by module id, cached
+        public Dict<string, ModuleConnector> InputModules { get; private set; } // todo get by module id, cached
 
         [DoNotSave(0, null)]
         private readonly int SerializerVersion = 0;
@@ -125,6 +119,7 @@ namespace ProgramableNetwork
             writer.WriteBool(IsPaused);
             Dict<string, int>.Serialize(NumberData, writer);
             Dict<string, string>.Serialize(StringData, writer);
+            Dict<string, ModuleConnector>.Serialize(InputModules, writer);
         }
 
         protected void DeserializeData(BlobReader reader)
@@ -135,8 +130,7 @@ namespace ProgramableNetwork
             IsPaused = reader.ReadBool();
             NumberData = Dict<string, int>.Deserialize(reader);
             StringData = Dict<string, string>.Deserialize(reader);
-
-            //reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Low);
+            InputModules = Dict<string, ModuleConnector>.Deserialize(reader);
         }
 
         [InitAfterLoad(InitPriority.Normal)]
@@ -188,9 +182,9 @@ namespace ProgramableNetwork
         }
 
         [DoNotSave(0, null)]
-        public Dict<string, int> NumberData { get; private set; }
+        protected Dict<string, int> NumberData { get; private set; }
         [DoNotSave(0, null)]
-        public Dict<string, string> StringData { get; private set; }
+        protected Dict<string, string> StringData { get; private set; }
 
 
         [DoNotSave(0, null)]
@@ -205,10 +199,10 @@ namespace ProgramableNetwork
                 this.module = module;
             }
 
-            public int this[string name]
+            public int this[string name, int defaultValue = 0]
             {
                 get => module.NumberData.TryGetValue("out__" + name, out int data)
-                    ? data : 0;
+                    ? data : defaultValue;
                 set => module.NumberData["out__" + name] = value;
             }
         }
@@ -246,18 +240,27 @@ namespace ProgramableNetwork
                 this.module = module;
             }
 
-            public string this[string name, string defaultValue = ""]
+            public string this[string name, string defaultValue]
             {
                 get => module.StringData.TryGetValue("field__" + name, out string data)
                     ? data : defaultValue;
-                set => module.StringData["field__" + name] = value;
             }
 
-            public int this[string name, int defaultValue = 0]
+            public int this[string name, int defaultValue]
             {
                 get => module.NumberData.TryGetValue("field__" + name, out int data)
                     ? data : defaultValue;
-                set => module.NumberData["field__" + name] = value;
+            }
+
+            public object this[string name]
+            {
+                set
+                {
+                    if (value is int i)
+                        module.NumberData["field__" + name] = i;
+                    if (value is string s)
+                        module.StringData["field__" + name] = s;
+                }
             }
         }
 
@@ -296,9 +299,9 @@ namespace ProgramableNetwork
 
             public ModuleStatus this[string name]
             {
-                get => module.NumberData.TryGetValue(direction + name, out int data)
+                get => module.NumberData.TryGetValue("status__" + direction + name, out int data)
                     ? (ModuleStatus)data : ModuleStatus.Init;
-                set => module.NumberData[direction + name] = (int)value;
+                set => module.NumberData["status__" + direction + name] = (int)value;
             }
         }
     }

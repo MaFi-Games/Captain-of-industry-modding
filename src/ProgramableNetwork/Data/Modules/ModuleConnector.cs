@@ -1,29 +1,27 @@
-﻿using Mafi.Core.Prototypes;
+﻿using Mafi.Serialization;
 
 namespace ProgramableNetwork
 {
     public class ModuleConnector
     {
-        public ModuleConnector(ModuleConnectorProto prototype, Module module)
+        public long ModuleId { get; }
+        public string OutputId { get; }
+
+        public ModuleConnector(long moduleId, string name)
         {
-            Prototype = prototype;
-            OwnerModule = module;
+            ModuleId = moduleId;
+            OutputId = name;
         }
 
-        public ModuleConnectorProto Prototype { get; private set; }
-        public readonly Module OwnerModule;
-    }
-
-    public class ModuleConnectorProto
-    {
-        public readonly string Id;
-        public readonly Proto.Str String;
-
-        public ModuleConnectorProto(string id, Proto.Str str)
+        public static void Serialize(ModuleConnector value, BlobWriter writer)
         {
-            Id = id;
-            String = str;
+            writer.WriteLong(value.ModuleId);
+            writer.WriteString(value.OutputId);
         }
 
+        public static ModuleConnector Deserialize(BlobReader reader)
+        {
+            return new ModuleConnector(reader.ReadLong(), reader.ReadString());
+        }
     }
 }

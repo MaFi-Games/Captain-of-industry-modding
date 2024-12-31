@@ -49,8 +49,6 @@ namespace ProgramableNetwork
                 strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization (connect up to 5 other devices, has 50 slots)"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
-                operationCount: 10,
-                range: 5,
                 allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
                 graphics: new LayoutEntityProto.Gfx(
                     prefabPath: NewAssets.Computers.Controller,

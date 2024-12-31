@@ -123,5 +123,10 @@ namespace ProgramableNetwork
             RelTile3f offset = position - computer.Position3f;
             return $"{entity.Prototype.Id.Value}:{offset}";
         }
+
+        public static string ModuleId(this string id)
+        {
+            return "ProgramableNetwork_Module_" + id;
+        }
     }
 }

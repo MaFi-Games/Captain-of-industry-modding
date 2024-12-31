@@ -211,7 +211,7 @@ namespace ProgramableNetwork
             public Builder(ProtoRegistrator registrator, string id, string name, string description, string symbol, Gfx gfx)
             {
                 m_registrator = registrator;
-                m_id = new ID("ProgramableNetwork_Module_" + id);
+                m_id = new ID(id.ModuleId());
                 m_name = name;
                 m_description = description;
                 m_tags = new List<Tag>();
