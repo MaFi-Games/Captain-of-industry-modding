@@ -9,6 +9,7 @@ namespace ProgramableNetwork
         string Name { get; }
         int Size { get; }
 
+        void Validate(Module module);
         void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, System.Action updateDialog);
     }
 }

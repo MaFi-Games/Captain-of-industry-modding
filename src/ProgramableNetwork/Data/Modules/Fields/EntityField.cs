@@ -1,5 +1,6 @@
 ﻿using Mafi;
 using Mafi.Core.Entities;
+using Mafi.Core.Entities.Static;
 using Mafi.Unity.InputControl.Inspectors;
 using Mafi.Unity.UiFramework;
 using Mafi.Unity.UiFramework.Components;
@@ -16,6 +17,7 @@ namespace ProgramableNetwork
         private string name;
         private Func<Module, IEntity, bool> entitySelector;
         private Fix32 distance;
+        private Fix64 sqrDistance;
 
         public EntityField(string id, string name, Func<Module, IEntity, bool> entitySelector, Fix32 distance)
         {
@@ -23,11 +25,42 @@ namespace ProgramableNetwork
             this.name = name;
             this.entitySelector = entitySelector;
             this.distance = distance;
+            this.sqrDistance = distance.ToFix64() * distance.ToFix64();
         }
 
         public string Name => name;
 
         public int Size => 40;
+
+        public void Validate(Module module)
+        {
+            if (module.Context.EntitiesManager.TryGetEntity(
+                    new Mafi.Core.EntityId(module.Field[id, 0]),
+                    out Entity entity
+                    ))
+            {
+                if (entity is StaticEntity staticEntity)
+                {
+                    Tile3f controllerPosition = module.Controller.Position3f;
+                    bool inRange = false;
+                    foreach (var item in staticEntity.OccupiedTiles)
+                    {
+                        Tile3f tilePosition = staticEntity.Position3f
+                            .AddX(item.RelativeX)
+                            .AddY(item.RelativeY);
+                        if ((controllerPosition - tilePosition).LengthSqr <= sqrDistance)
+                        {
+                            inRange = true;
+                            break;
+                        }
+                    }
+                    if (!inRange)
+                    {
+                        module.Field[id] = 0;
+                    }
+                }
+            }
+        }
 
         public void Init(ControllerInspector inspector, WindowView parentWindow, StackContainer fieldContainer, UiBuilder uiBuilder, Module module, Action updateDialog)
         {

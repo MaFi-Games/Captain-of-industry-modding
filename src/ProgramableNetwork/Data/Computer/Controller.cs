@@ -18,6 +18,8 @@ using Mafi.Core.Factory.ComputingPower;
 using Mafi.Core.Economy;
 using Mafi.Core.Maintenance;
 using Mafi.Core.Products;
+using Mafi.Core.Entities.Static;
+using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
@@ -88,12 +90,43 @@ namespace ProgramableNetwork
         public void AddToConfig(EntityConfigData data)
         {
             // TODO copy modules, name, entity connections, ...
+            data.Set<StaticEntityProto.ID>("controller_proto", m_protoId, (str, blob) => blob.WriteString(str.Value));
+            data.SetArray<Module>("controller_modules", Modules.ToImmutableArray(), Module.Serialize);
+            data.SetArray<Lyst<ModulePlacement>>("controller_rows", Rows.ToImmutableArray(), Lyst<ModulePlacement>.Serialize);
         }
 
         public void ApplyConfig(EntityConfigData data)
         {
             // TODO copy modules, name, entity connections ...
             // TODO validate connection and rotate connection when possible
+            var newProto = data.Get("controller_proto", (blob) => new StaticEntityProto.ID(blob.ReadString()));
+            if (newProto != m_protoId) {
+                // TODO play sound
+                return;
+            }
+            
+            var newModules = data.GetArray("controller_modules", Module.Deserialize);
+            if (newModules != null)
+            {
+                this.Modules.Clear();
+                this.Modules.AddRange(newModules?.AsEnumerable());
+                foreach (Module module in this.Modules)
+                {
+                    module.Context = Context;
+                    module.Controller = this;
+                    module.initContexts(-1);
+                    foreach (IField field in module.Prototype.Fields)
+                    {
+                        field.Validate(module);
+                    }
+                }
+            }
+            var newLocation = data.GetArray("controller_rows", Lyst<ModulePlacement>.Deserialize);
+            if (newLocation != null)
+            {
+                this.Rows.Clear();
+                this.Rows.AddRange(newLocation?.AsEnumerable());
+            }
         }
 
         public static void Serialize(Controller value, BlobWriter writer)

@@ -51,5 +51,10 @@ namespace ProgramableNetwork
             numberEditor.SetText(value);
             module.Field[Id] = value;
         }
+
+        public void Validate(Module module)
+        {
+            // nothing to do
+        }
     }
 }

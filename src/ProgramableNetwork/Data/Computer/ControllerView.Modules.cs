@@ -453,6 +453,17 @@ namespace ProgramableNetwork
                                 isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
                             ).Extend(backgroundClr: ColorRgba.DarkGreen))
                         .SetSize(20, 20)
+                        .OnRightClick(() =>
+                        {
+                            if (module.InputModules.TryRemove(input.Id, out _))
+                            {
+                                refresh();
+                            }
+                            else
+                            {
+                                builder.AudioDb.GetSharedAudio(builder.Audio.InvalidOp).Play();
+                            }
+                        })
                         .OnClick(() =>
                         {
                             if (m_computerView.OutputConnection == null)
@@ -494,6 +505,28 @@ namespace ProgramableNetwork
                                 isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
                             ).Extend(backgroundClr: ColorRgba.DarkRed))
                         .SetSize(20, 20)
+                        .OnRightClick(() =>
+                        {
+                            if (!isConnected)
+                            {
+                                // module not found, is not unassignable
+                                builder.AudioDb.GetSharedAudio(builder.Audio.InvalidOp).Play();
+                                return;
+                            }
+
+                            foreach (var target in m_controller.SelectedEntity.Modules)
+                            {
+                                foreach (var connection in target.InputModules)
+                                {
+                                    if (connection.Value.ModuleId == module.Id)
+                                    {
+                                        target.InputModules.TryRemove(connection.Key, out _);
+                                        refresh();
+                                        return;
+                                    }
+                                }
+                            }
+                        })
                         .OnClick(() => m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id))
                         .SetOnMouseEnterLeaveActions(
                             () => { m_computerView.m_decription = output.String.Name; },

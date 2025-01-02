@@ -3,6 +3,7 @@ using Mafi.Base;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,7 @@ namespace ProgramableNetwork
             Connections(registrator);
             Forks(registrator);
             Booleans(registrator);
+            Display(registrator);
         }
 
         private void Forks(ProtoRegistrator registrator)
@@ -246,7 +248,8 @@ namespace ProgramableNetwork
                 .AddOutput("fullness", "Fullness in %")
                 .AddOutput("product", "Product in #")
                 .AddEntityField<StorageBase>("entity", "Connection device", 20.ToFix32())
-                .AddInt32Field("buffer", "Storage slot (0-based)", 0)
+                // .AddInt32Field("buffer", "Storage slot (0-based)", 0)
+                // TODO add filter input field
                 .Action(m =>
                 {
                     int entityId = m.Field["entity", 0];
@@ -262,6 +265,47 @@ namespace ProgramableNetwork
                         if (entity.StoredProduct.HasValue)
                         {
                             m.Output["product"] = (int)(uint)entity.StoredProduct.Value.SlimId.Value;
+                        }
+                        else
+                        {
+                            m.Output["product"] = -1;
+                        }
+                        return;
+                    }
+
+                    m.Output["quantity"] = 0;
+                    m.Output["capacity"] = 0;
+                    m.Output["fullness"] = 100;
+                    m.Output["product"] = -1;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator.ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddOutput("quantity", "Quantity")
+                .AddOutput("capacity", "Capacity")
+                .AddOutput("fullness", "Fullness in %")
+                .AddInput("product", "First Product in #")
+                .AddEntityField<Transport>("entity", "Connection device", 20.ToFix32())
+                // TODO add filter input field
+                .Action(m =>
+                {
+                    int entityId = m.Field["entity", 0];
+                    int buffer = m.Input["buffer", 0];
+                    int filterId = m.Input["product", 0];
+
+                    if (m.Context.EntitiesManager
+                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Transport entity))
+                    {
+                        m.Output["quantity"] = entity.TransportedProducts
+                                            .Where(p => filterId == 0 || p.SlimId.Value == filterId)
+                                            .Select(p => p.Quantity.Value).Sum();
+                        m.Output["capacity"] = entity.Trajectory.MaxProducts;
+                        m.Output["fullness"] = (int)(100f * m.Output["quantity"] / m.Output["capacity"]);
+
+                        if (entity.FirstProduct.HasValue)
+                        {
+                            m.Output["product"] = (int)(uint)entity.FirstProduct.Value.SlimId.Value;
                         }
                         else
                         {
@@ -312,6 +356,13 @@ namespace ProgramableNetwork
                 .Action(m => { m.Output["c"] = m.Input["a", 0] <= m.Input["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
+        }
+
+        private void Display(ProtoRegistrator registrator)
+        {
+            // TODO add display
+            // from 2 - 16 digits
+            // display float values
         }
     }
 }

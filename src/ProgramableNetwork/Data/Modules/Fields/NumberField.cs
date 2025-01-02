@@ -73,5 +73,10 @@ namespace ProgramableNetwork
                 module.Field[Name] = value;
             }
         }
+
+        public void Validate(Module module)
+        {
+            // nothing to do
+        }
     }
 }
