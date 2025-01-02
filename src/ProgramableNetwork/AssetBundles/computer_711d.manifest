@@ -1,0 +1,33 @@
+ManifestFileVersion: 0
+CRC: 3792783544
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: ea1b7d88cd62568d62bfd0337fe3bd75
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: d76d0903a3dfcdecc411f80894a679a8
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: ea1b7d88cd62568d62bfd0337fe3bd75
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 64
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/ProgramableNetwork/Computer/Computer.prefab
+Dependencies:
+- S:/git/COIM-Derbis/src/ExampleMod.Unity/AssetBundles/computer_1324

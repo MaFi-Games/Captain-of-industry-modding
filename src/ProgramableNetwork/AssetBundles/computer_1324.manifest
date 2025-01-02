@@ -1,0 +1,43 @@
+ManifestFileVersion: 0
+CRC: 3818626973
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 1e5718c97d9b5c9248467b3246854a01
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: d27d605e56b00c7d193d3604b99a7461
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 1e5718c97d9b5c9248467b3246854a01
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/ProgramableNetwork/Computer/box_back.mat
+- Assets/ProgramableNetwork/Computer/box_side.png
+- Assets/ProgramableNetwork/Computer/box_back.png
+- Assets/ProgramableNetwork/Computer/Icon.png
+- Assets/ProgramableNetwork/Computer/box_front.png
+- Assets/ProgramableNetwork/Computer/box_top.mat
+- Assets/ProgramableNetwork/Computer/box_front.mat
+- Assets/ProgramableNetwork/Computer/box_top.png
+- Assets/ProgramableNetwork/Computer/computerbox.obj
+- Assets/ProgramableNetwork/Computer/box_side.mat
+Dependencies: []
