@@ -145,6 +145,7 @@ namespace ProgramableNetwork
         public List<ModuleConnectorProto> Inputs { get; }
         public List<ModuleConnectorProto> Outputs { get; }
         public List<ModuleConnectorProto> Displays { get; }
+        public List<Category> Categories { get; }
         public List<IField> Fields { get; }
         public Electricity UsedPower { get; }
         public Computing UsedComputing { get; }
@@ -161,7 +162,7 @@ namespace ProgramableNetwork
 
         public ModuleProto(ID id, Str strings, EntityCosts costs, Gfx gfx, IEnumerable<Tag> tags, Action<Module> action, Action<Module> reset, bool isInputModule, bool isOutputModule, Electricity usedPower, Computing usedComputing,
             List<ModuleConnectorProto> m_inputs, List<ModuleConnectorProto> m_outputs, List<ModuleConnectorProto> m_displays, List<IField> m_fields,
-            Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices) : base(id, strings, costs, gfx, tags)
+            Action<Module, StackContainer> m_displayFunction, Func<Module, int> m_widthFunction, string m_symbol, List<StaticEntityProto.ID> m_allowedDevices, List<Category> m_categories) : base(id, strings, costs, gfx, tags)
         {
             Id = id;
             Symbol = m_symbol;
@@ -179,6 +180,7 @@ namespace ProgramableNetwork
             DisplayFunction = m_displayFunction;
             WidthFunction = m_widthFunction;
             AllowedDevices = m_allowedDevices;
+            Categories = m_categories;
             SetAvailability(false);
         }
 
@@ -205,6 +207,8 @@ namespace ProgramableNetwork
             private readonly List<StaticEntityProto.ID> m_allowedDevices;
             private bool m_customBuild;
             private bool m_customMaintenance;
+            private List<Category> m_categories = new List<Category>();
+
             public Action<Module, StackContainer> m_displayFunction { get; }
             public Func<Module, int> m_widthFunction { get; }
 
@@ -254,7 +258,8 @@ namespace ProgramableNetwork
                     m_displayFunction,
                     m_widthFunction,
                     m_symbol,
-                    m_allowedDevices
+                    m_allowedDevices,
+                    m_categories
                 ));
             }
 
@@ -332,15 +337,28 @@ namespace ProgramableNetwork
                 return BuildElectronicsT1(1);
             }
 
-            public Builder AddDisplay(string id, string name)
+            /// <summary>
+            /// Displays will be shown on the name, the name will be overriden
+            /// </summary>
+            /// <param name="id">indexing name in Module.Field[id]</param>
+            /// <param name="name">Displayerd tooltip value</param>
+            /// <param name="width">taken module width</param>
+            /// <returns></returns>
+            public Builder AddDisplay(string id, string name, int width)
             {
-                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name)));
+                m_displays.Add(new ModuleConnectorProto(id, m_id.Display(id, name), width, new string('0', width * 2)));
                 return this;
             }
 
             public Builder Action(Action<Module> action)
             {
                 m_action = action;
+                return this;
+            }
+
+            public Builder AddCategory(Category category)
+            {
+                m_categories.Add(category);
                 return this;
             }
 

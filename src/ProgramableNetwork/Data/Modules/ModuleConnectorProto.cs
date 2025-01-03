@@ -5,12 +5,16 @@ namespace ProgramableNetwork
     public class ModuleConnectorProto
     {
         public readonly string Id;
-        public readonly Proto.Str String;
+        public readonly Proto.Str Name;
+        public readonly int Width;
+        public readonly string DefaultText;
 
-        public ModuleConnectorProto(string id, Proto.Str str)
+        public ModuleConnectorProto(string id, Proto.Str str, int width = 1, string defaultText = "")
         {
             Id = id;
-            String = str;
+            Name = str;
+            Width = width;
+            DefaultText = defaultText;
         }
 
     }

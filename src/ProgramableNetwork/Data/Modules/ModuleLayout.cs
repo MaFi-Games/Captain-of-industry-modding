@@ -1,5 +1,6 @@
 ﻿using Mafi.Unity.UiFramework.Components;
 using System;
+using System.Linq;
 
 namespace ProgramableNetwork
 {
@@ -15,7 +16,7 @@ namespace ProgramableNetwork
         {
             Inputs = proto.Inputs?.Count ?? 0;
             Outputs = proto.Outputs?.Count ?? 0;
-            Displays = proto.Displays?.Count ?? 0;
+            Displays = proto.Displays == null ? 0 : proto.Displays.Select(d => d.Width).Sum();
             Fields = proto.Fields?.Count ?? 0;
             Display = proto.DisplayFunction;
             DynamicWidth = proto.WidthFunction;

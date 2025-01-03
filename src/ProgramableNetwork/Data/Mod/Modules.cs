@@ -1,10 +1,16 @@
 ﻿using Mafi;
 using Mafi.Base;
+using Mafi.Core.Buildings.Settlements;
 using Mafi.Core.Buildings.Storages;
 using Mafi.Core.Entities;
 using Mafi.Core.Entities.Static;
+using Mafi.Core.Entities.Static.Layout;
+using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
+using Mafi.Core.Population;
+using Mafi.Unity.UserInterface;
+using RTG;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,14 +25,19 @@ namespace ProgramableNetwork
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
-            registrator.ModuleBuilderStart("Constant", "Constant", "#", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Constant", "Constant", "#", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddCategory(Category.Boolean)
                 .AddOutput("value", "Value")
                 .AddInt32Field("number", "Number")
                 .Action(m => { m.Output["value"] = m.Field["number", 0]; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Sum", "C = A + B", "A+B", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Sum", "C = A + B", "A+B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
@@ -34,7 +45,19 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Invert", "B = -A", "-A", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Sub", "C = A - B", "A-B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
+                .AddInput("a", "A")
+                .AddInput("b", "B")
+                .AddOutput("c", "C")
+                .Action(m => { m.Output["c"] = m.Input["a", 0] - m.Input["b", 0]; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Invert", "B = -A", "-A", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddOutput("b", "B")
                 .Action(m => { m.Output["b"] = 0 - m.Input["a", 0]; })
@@ -43,9 +66,59 @@ namespace ProgramableNetwork
 
             Comparation(registrator);
             Connections(registrator);
+            Stats(registrator);
             Forks(registrator);
             Booleans(registrator);
             Display(registrator);
+        }
+
+        private void Stats(ProtoRegistrator registrator)
+        {
+            registrator
+                .ModuleBuilderStart("Stats_Unity", "Statistic: Unity", "UNI", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Stats)
+                .AddOutput("v", "Unity value")
+                // ADD behind settings
+                .Action(m =>
+                {
+                    m.Output["v"] = m.Context.UpointsManager.Quantity.Value;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Stats_Workers", "Statistic: Workers", "WRK", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Stats)
+                .AddOutput("u", "Used workers")
+                .AddOutput("a", "Available workers")
+                .AddOutput("m", "Missing workers")
+                .AddOutput("t", "Total workers")
+                // ADD behind settings
+                .Action(m =>
+                {
+                    m.Output["a"] = Math.Max(0, m.Context.WorkersManager.AmountOfFreeWorkersOrMissing);
+                    m.Output["t"] = (int)(m.Context.WorkersManager as WorkersManager).TotalWorkersNeededStats.ThisYear + m.Output["a"];
+                    m.Output["m"] = 0-Math.Min(0, m.Context.WorkersManager.AmountOfFreeWorkersOrMissing);
+                    m.Output["u"] = m.Output["t", 0] - m.Output["a", 0];
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
+            // TODO: read electricity
+            //registrator
+            //    .ModuleBuilderStart("Stats_Electricity", "Statistic: Electricity", "PWR", Assets.Base.Products.Icons.Vegetables_svg)
+            //    .AddCategory(Category.Stats)
+            //    .AddOutput("u", "Used workers")
+            //    .AddOutput("a", "Available workers")
+            //    .AddOutput("m", "Missing workers")
+            //    .AddOutput("t", "Total workers")
+            //    // ADD behind settings or connect to power network
+            //    .Action(m =>
+            //    {
+            //        new ElectricityManager(m, m, m, m, m, m);
+            //    })
+            //    .AddControllerDevice()
+            //    .BuildAndAdd();
         }
 
         private void Forks(ProtoRegistrator registrator)
@@ -104,6 +177,7 @@ namespace ProgramableNetwork
             {
                 var builder = registrator
                     .ModuleBuilderStart($"Boolean_And_{i}", $"Boolean: AND ({i} pins)", $"AND-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Boolean)
                     .AddOutput("b", "not A")
                     .AddOutput("a", "A")
                     .AddControllerDevice()
@@ -139,6 +213,7 @@ namespace ProgramableNetwork
             {
                 var builder = registrator
                     .ModuleBuilderStart($"Boolean_Or_{i}", $"Boolean: OR ({i} pins)", $"OR-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Boolean)
                     .AddOutput("b", "not A")
                     .AddOutput("a", "A")
                     .AddControllerDevice()
@@ -152,6 +227,7 @@ namespace ProgramableNetwork
             }
             registrator
                 .ModuleBuilderStart($"Boolean_Xor", $"Boolean: XOR", $"XOR", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("b", "not A")
@@ -171,7 +247,9 @@ namespace ProgramableNetwork
 
         private static void Connections(ProtoRegistrator registrator)
         {
-            registrator.ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Connection_Controller_Input", "Connection: Controller (4 pin, input)", "C-IN", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
                 .AddOutput("a", "A")
                 .AddOutput("b", "B")
                 .AddOutput("c", "C")
@@ -213,7 +291,9 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (4 pin, output)", "C-OUT", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Connection_Controller_Output", "Connection: Controller (4 pin, output)", "C-OUT", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddInput("c", "C")
@@ -222,7 +302,10 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Connection_SwitchOff", "Connection: Switch Off", "S", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Connection_SwitchOff", "Connection: Switch Off", "S", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.Command)
                 .AddInput("pause", "Pause")
                 .AddEntityField<StaticEntity>("entity", "Connection device", 20.ToFix32())
                 .Action(m =>
@@ -242,7 +325,9 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Connection_Storage", "Connection: Storage (input)", "STOCK", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Connection_Storage", "Connection: Storage (input)", "STOCK", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
                 .AddOutput("quantity", "Quantity")
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
@@ -281,10 +366,13 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Connection_Transport", "Connection: Transport (input)", "TRANS", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
                 .AddOutput("quantity", "Quantity")
                 .AddOutput("capacity", "Capacity")
                 .AddOutput("fullness", "Fullness in %")
+                .AddOutput("moving", "Is moving")
                 .AddInput("product", "First Product in #")
                 .AddEntityField<Transport>("entity", "Connection device", 20.ToFix32())
                 // TODO add filter input field
@@ -302,6 +390,7 @@ namespace ProgramableNetwork
                                             .Select(p => p.Quantity.Value).Sum();
                         m.Output["capacity"] = entity.Trajectory.MaxProducts;
                         m.Output["fullness"] = (int)(100f * m.Output["quantity"] / m.Output["capacity"]);
+                        m.Output["moving"] = entity.IsMoving ? 1 : 0;
 
                         if (entity.FirstProduct.HasValue)
                         {
@@ -321,11 +410,45 @@ namespace ProgramableNetwork
                 })
                 .AddControllerDevice()
                 .BuildAndAdd();
+
+            registrator
+                .ModuleBuilderStart("Connection_Settlement", "Connection: Settlement (population)", "SETTLE", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Connection)
+                .AddCategory(Category.Stats)
+                .AddOutput("pop_this", "Population (settlement module)")
+                .AddOutput("pop_nearby", "Population (settlement total)")
+                .AddInput("product", "First Product in #")
+                .AddEntityField<SettlementHousingModule>("entity", "Connection device", 20.ToFix32())
+                // TODO add filter input field
+                .Action(m =>
+                {
+                    int entityId = m.Field["entity", 0];
+                    int buffer = m.Input["buffer", 0];
+                    int filterId = m.Input["product", 0];
+
+                    if (m.Context.EntitiesManager
+                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out SettlementHousingModule entity))
+                    {
+                        m.Output["pop_this"] = entity.Population;
+                        m.Output["pop_nearby"] = entity.Settlement.ValueOrNull?.Population ?? entity.Population;
+                        return;
+                    }
+
+                    m.Output["quantity"] = 0;
+                    m.Output["capacity"] = 0;
+                    m.Output["fullness"] = 100;
+                    m.Output["product"] = -1;
+                })
+                .AddControllerDevice()
+                .BuildAndAdd();
         }
 
         private void Comparation(ProtoRegistrator registrator)
         {
-            registrator.ModuleBuilderStart("Compare_Int_Greater", "Compare: A > B", "A>B", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Compare_Int_Greater", "Compare: A > B", "A>B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
@@ -333,7 +456,10 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Compare_Int_Lower", "Compare: A < B", "A<B", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Compare_Int_Lower", "Compare: A < B", "A<B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
@@ -341,7 +467,10 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Compare_Int_GreaterOrEqual", "Compare: A ≥ B", "A≥B", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Compare_Int_GreaterOrEqual", "Compare: A ≥ B", "A≥B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
@@ -349,7 +478,10 @@ namespace ProgramableNetwork
                 .AddControllerDevice()
                 .BuildAndAdd();
 
-            registrator.ModuleBuilderStart("Compare_Int_LowerOrEqual", "Compare: A ≤ B", "A≤B", Assets.Base.Products.Icons.Vegetables_svg)
+            registrator
+                .ModuleBuilderStart("Compare_Int_LowerOrEqual", "Compare: A ≤ B", "A≤B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddCategory(Category.Arithmetic)
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
@@ -361,8 +493,28 @@ namespace ProgramableNetwork
         private void Display(ProtoRegistrator registrator)
         {
             // TODO add display
-            // from 2 - 16 digits
             // display float values
+            Action<Module> ModuleFunction(int digits)
+            {
+                return (Module m) =>
+                {
+                    int value = m.Input["a"];
+                    string text = value.ToString($"D{digits}");
+                    m.Display["a"] = text.Length > digits ? text.Substring(text.Length - digits) : text;
+                };
+            }
+            foreach (int i in new int[] { 2, 4, 8, 16 })
+            {
+                registrator
+                    .ModuleBuilderStart($"Display_Int_{i}", $"Display: {i*2} digits", $"F-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Display)
+                    .AddInput("a", "A")
+                    .AddDisplay("a", "A", i)
+                    .AddControllerDevice()
+                    // dynamic
+                    .Action(ModuleFunction(i * 2))
+                    .BuildAndAdd();
+            }
         }
     }
 }

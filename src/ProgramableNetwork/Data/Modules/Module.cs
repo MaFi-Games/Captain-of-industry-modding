@@ -137,7 +137,16 @@ namespace ProgramableNetwork
         [OnlyForSaveCompatibility(null)]
         internal void initContexts(int saveVersion)
         {
-            Prototype = Context.ProtosDb.Get<ModuleProto>(new ModuleProto.ID(m_protoId)).ValueOrThrow("Invalid module proto: " + m_protoId);
+            var Prototype = Context.ProtosDb.Get<ModuleProto>(new ModuleProto.ID(m_protoId));
+            if (Prototype.HasValue)
+            {
+                this.Prototype = Prototype.Value;
+            }
+            else
+            {
+                var alternative = Deprecation.GetAlternative(new ModuleProto.ID(m_protoId));
+                this.Prototype = Context.ProtosDb.Get<ModuleProto>(alternative).ValueOrThrow("Invalid module proto: " + m_protoId);
+            }
         }
 
         public void AddToConfig(EntityConfigData data)
@@ -260,6 +269,33 @@ namespace ProgramableNetwork
                         module.NumberData["field__" + name] = i;
                     if (value is string s)
                         module.StringData["field__" + name] = s;
+                }
+            }
+        }
+
+        [DoNotSave(0, null)]
+        public DisplayData Display => new DisplayData(this);
+
+        public class DisplayData
+        {
+            private Module module;
+
+            internal DisplayData(Module module)
+            {
+                this.module = module;
+            }
+
+            public string this[string name, string defaultValue]
+            {
+                get => module.StringData.TryGetValue("display__" + name, out string data)
+                    ? data : defaultValue;
+            }
+
+            public string this[string name]
+            {
+                set
+                {
+                    module.StringData["display__" + name] = value;
                 }
             }
         }

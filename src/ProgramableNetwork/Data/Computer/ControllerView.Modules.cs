@@ -23,12 +23,14 @@ namespace ProgramableNetwork
         private StackContainer m_moduleDialog;
         private int m_targetRow = -1;
         private int m_targetColumn = -1;
-        private Module m_newModule;
+        private ModuleProto m_newModule;
         private Module m_editModule;
         private StackContainer m_newDialog;
         private StackContainer m_editDialog;
         private StackContainer m_container;
         private LocStr? m_decription;
+        private List<IDataUpdater> m_updaters = new List<IDataUpdater>();
+        private Category m_category;
 
         public ModuleConnector OutputConnection { get; set; }
 
@@ -70,7 +72,24 @@ namespace ProgramableNetwork
                 m_decription = null;
                 OutputConnection = null;
                 m_controller.EntityHighlighterSelectable.ClearAllHighlights();
+                m_updaters.Clear();
             });
+            updaterBuilder.Observe(WasUpdated).Do(UpdateChanged);
+        }
+
+        private List<IDataUpdater> WasUpdated()
+        {
+            List<IDataUpdater> dataUpdaters = new List<IDataUpdater>();
+            foreach (IDataUpdater item in m_updaters)
+                if (item.WasChanged())
+                    dataUpdaters.Add(item);
+            return dataUpdaters;
+        }
+
+        private void UpdateChanged(List<IDataUpdater> obj)
+        {
+            foreach (var item in obj)
+                item.Update();
         }
 
         private void CreateNewDialog(int targetRow, int targetColumn)
@@ -79,6 +98,7 @@ namespace ProgramableNetwork
 
             m_targetRow = targetRow;
             m_targetColumn = targetColumn;
+            Action refresh = () => CreateNewDialog(targetRow, targetColumn);
 
             m_newDialog = Builder.NewStackContainer("dialogNew")
                 .SetItemSpacing(5)
@@ -92,20 +112,25 @@ namespace ProgramableNetwork
                 .SetHeight(20)
                 .AppendTo(m_newDialog);
 
-            Dropdwn picker = Builder.NewDropdown("dialogNewPicker")
+            Dropdwn catPicker = Builder.NewDropdown("dialogNewCatPicker")
                 .SetParent(m_newDialog, true)
                 .SetHeight(20)
                 .AppendTo(m_newDialog);
 
-            FillPicker(picker);
+            FillCategoryPicker(catPicker, refresh);
 
-            // Settings
-            CreateSettingsPanel(m_newDialog, () => m_newModule, () => CreateNewDialog(targetRow, targetColumn));
+            Dropdwn typePicker = Builder.NewDropdown("dialogNewTypePicker")
+                .SetParent(m_newDialog, true)
+                .SetHeight(20)
+                .AppendTo(m_newDialog);
+
+            FillModulePicker(typePicker, m_category, refresh);
 
             Builder.NewBtnGeneral("dialogNewCreate")
                 .SetText(NewTr.Tools.Add)
                 .SetParent(m_newDialog, true)
                 .SetHeight(20)
+                .SetEnabled(m_newModule != null)
                 .OnClick(() =>
                 {
                     if (TryPlaceAt(m_newModule, m_targetRow, m_targetColumn))
@@ -120,25 +145,54 @@ namespace ProgramableNetwork
             m_moduleDialog.SetWidth(400);
         }
 
-        private void FillPicker(Dropdwn picker)
+        private void FillCategoryPicker(Dropdwn picker, Action refresh)
         {
-            List<ModuleProto> types = Entity.Context.ProtosDb
-                .All<ModuleProto>()
-                .Where(Entity.Prototype.AllowedModule)
-                .ToList();
-            var typeStrings = types.Select(t => t.Strings.Name.TranslatedString).ToList();
-            var selected = types.SelectIndicesWhere(t => t.Id == m_newModule?.Prototype.Id).FirstOrDefault();
+            List<Category> types = Category.Categories(Entity.Context.ProtosDb, Entity);
+            types.Insert(0, new Category("all", "All"));
+
+            var typeStrings = types.Select(t => t.Name).ToList();
+
+            var selected = types.SelectIndicesWhere(t => t.Id == m_category?.Id).FirstOrDefault();
             picker.AddOptions(typeStrings);
             picker.OnValueChange(index =>
             {
-                m_newModule = new Module(types[index], Entity.Context, Entity);
-                CreateNewDialog(m_targetRow, m_targetColumn);
+                m_category = types[index];
+                m_newModule = null;
+                refresh();
             });
 
             picker.SetValueWithoutNotify(selected);
 
-            if (m_newModule == null)
-                m_newModule = new Module(types[0], Entity.Context, Entity);
+            if (m_category == null)
+                m_category = types[0];
+        }
+
+        private void FillModulePicker(Dropdwn picker, Category category, Action refresh)
+        {
+            var typesAll = Entity.Context.ProtosDb.All<ModuleProto>();
+            List<ModuleProto> types = 
+                (category.Id == "all"
+                    ? Entity.Context.ProtosDb.All<ModuleProto>()
+                    : Entity.Context.ProtosDb.All<ModuleProto>()
+                          .Where(module => module.Categories.Contains(category)))
+                .Where(Entity.Prototype.AllowedModule)
+                .ToList();
+
+            var typeStrings = types.Select(t => t.Strings.Name.TranslatedString).ToList();
+            var selected = types.SelectIndicesWhere(t => t.Id == m_newModule?.Id).FirstOrDefault();
+            picker.AddOptions(typeStrings);
+            picker.OnValueChange(index =>
+            {
+                m_newModule = types[index];
+                refresh();
+            });
+
+            picker.SetValueWithoutNotify(selected);
+
+            if (m_newModule == null && types.Count > 0)
+                m_newModule = types[0];
+            else if (types.Count == 0)
+                m_newModule = null;
         }
 
         private void CreateEditDialog(Module module)
@@ -211,6 +265,7 @@ namespace ProgramableNetwork
 
         private void RedrawComponents(Lyst<long> modules)
         {
+            m_updaters.Clear();
             m_moduleLayout.ClearAndDestroyAll();
             m_moduleLayout.SetSize(Entity.Prototype.Columns * 20, Entity.Prototype.Rows * 80 + (Entity.Prototype.Rows - 1) * 10);
             m_moduleLayout.SetSizeMode(StackContainer.SizeMode.Dynamic);
@@ -308,8 +363,9 @@ namespace ProgramableNetwork
             holder.AppendTo(dialog);
         }
 
-        private bool TryPlaceAt(Module module, int targetRow, int targetColumn)
+        private bool TryPlaceAt(ModuleProto moduleProto, int targetRow, int targetColumn)
         {
+            var module = new Module(moduleProto, Entity.Context, Entity);
             var width = module.Layout.GetWidth(module);
             var placeFound = true;
             var row = Entity.Rows[targetRow];
@@ -335,7 +391,6 @@ namespace ProgramableNetwork
                 m_editModule = module;
                 m_targetRow = targetRow;
                 m_targetColumn = targetColumn;
-                m_newModule = null;
                 return true;
             }
             else
@@ -378,7 +433,6 @@ namespace ProgramableNetwork
             private readonly Module m_module;
             private readonly ControllerInspector m_controller;
             private readonly ControllerView m_computerView;
-            private readonly List<IUiUpdater> m_updaters = new List<IUiUpdater>();
 
             public ComputerModuleView(UiBuilder uiBuilder, Module module, ControllerInspector controller, ControllerView computerView, bool selected, Action refresh)
                 : base(uiBuilder, "moduleView_" + module.Id)
@@ -389,6 +443,7 @@ namespace ProgramableNetwork
                 string name = "moduleView_" + module.Id;
                 var updater = UpdaterBuilder.Start();
                 int width = module.Layout.GetWidth(module);
+                bool displaysExists = module.Prototype.Displays.Count > 0;
 
                 this.SetSize(width * 20, 80);
                 this.SetStackingDirection(Direction.TopToBottom);
@@ -406,20 +461,34 @@ namespace ProgramableNetwork
 
                 inputsPanel.AppendTo(this);
 
+
                 // Add Field panel
                 Btn fieldsPanel = uiBuilder.NewBtnGeneral(name + "_edit")
                     .SetParent(this, true)
-                    .SetSize(width * 20, 40)
+                    .SetSize(width * 20, displaysExists ? 20 : 40)
                     .SetText(module.Prototype.Symbol)
                     .OnClick(() =>
                     {
                         m_computerView.CreateEditDialog(module);
                     });
 
+                fieldsPanel.AppendTo(this);
+
                 if (selected)
                     fieldsPanel.SetButtonStyle(uiBuilder.Style.Global.GeneralBtnActive);
 
-                fieldsPanel.AppendTo(this);
+                if (displaysExists)
+                {
+                    StackContainer displaysPanel = uiBuilder.NewStackContainer(name + "_displays")
+                        .SetParent(this, true)
+                        .SetSize(width * 20, 20)
+                        .SetBackground(ColorRgba.DarkDarkGray)
+                        .SetSizeMode(SizeMode.StaticCenterAligned)
+                        .SetStackingDirection(Direction.LeftToRight);
+                    AddDisplays(uiBuilder, displaysPanel, module, updater, refresh);
+
+                    displaysPanel.AppendTo(this);
+                }
 
                 // Add Ouptut panel
                 StackContainer outputsPanel = uiBuilder.NewStackContainer(name + "_outputs")
@@ -433,7 +502,6 @@ namespace ProgramableNetwork
                 outputsPanel.AppendTo(this);
 
                 var updaterBuilt = updater.Build();
-                m_updaters.Add(updaterBuilt);
                 computerView.AddUpdater(updaterBuilt);
 
                 this.RectTransform.ForceUpdateRectTransforms();
@@ -478,7 +546,7 @@ namespace ProgramableNetwork
                             }
                         })
                         .SetOnMouseEnterLeaveActions(
-                            () => { m_computerView.m_decription = input.String.Name; },
+                            () => { m_computerView.m_decription = input.Name.Name; },
                             () => { }
                         )
                         .AppendTo(inputsPanel);
@@ -529,24 +597,32 @@ namespace ProgramableNetwork
                         })
                         .OnClick(() => m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id))
                         .SetOnMouseEnterLeaveActions(
-                            () => { m_computerView.m_decription = output.String.Name; },
+                            () => { m_computerView.m_decription = output.Name.Name; },
                             () => { }
                         )
                         .AppendTo(inputsPanel);
                 }
             }
 
-            public void Remove()
+            private void AddDisplays(UiBuilder builder, StackContainer displaysPanel, Module module, UpdaterBuilder updater, Action refresh)
             {
-                var updaterHolder = ((IUiUpdater)m_computerView.GetType().GetField("m_updater", System.Reflection.BindingFlags.NonPublic).GetValue(m_computerView));
-
-                foreach (var updater in m_updaters)
+                var displays = module.Prototype.Displays;
+                for (int i = displays.Count - 1; i >= 0; i--)
                 {
-                    updaterHolder.RemoveChildUpdater(updater);
-                }
+                    var display = displays[i];
 
-                //m_controller.Context.EntitiesManager.RemoveAndDestroyEntityNoChecks(m_module, Mafi.Core.Entities.EntityRemoveReason.Remove);
-                m_controller.SelectedEntity.Modules.Remove(m_module);
+                    var text = builder.NewBtnGeneral($"{module.Id}_display_{i}")
+                        .SetText(module.Display[display.Id, display.DefaultText])
+                        .SetButtonStyle(builder.Style.Global.GeneralBtn.ExtendText(color: ColorRgba.White))
+                        .SetSize(20 * display.Width, 20)
+                        .AppendTo(displaysPanel);
+
+                    m_computerView.m_updaters.Add(new DataUpdater<string>(
+                        getter: () => module.Display[display.Id, display.DefaultText],
+                        setter: t => text.SetText(t),
+                        comparator: string.Equals
+                    ));
+                }
             }
         }
     }
