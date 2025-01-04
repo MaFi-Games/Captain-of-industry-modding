@@ -30,6 +30,7 @@ namespace ProgramableNetwork
 				.Description("Unlocks controlled input by condition")
 				.SetCosts(ResearchCostsTpl.Build.SetDifficulty(4))
 				.AddLayoutEntityToUnlock(NewIds.Controllers.Controller)
+				.AddLayoutEntityToUnlock(NewIds.Controllers.Antena)
 				.AddProtosToUnlock<ModuleProto>(m_modules[NewIds.Research.ProgramableNetwork_Stage1].WithGenericId())
 				.BuildAndAdd();
 			
