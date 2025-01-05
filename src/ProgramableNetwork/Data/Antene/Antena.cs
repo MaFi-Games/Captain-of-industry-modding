@@ -37,6 +37,7 @@ namespace ProgramableNetwork
         };
 
         public Option<string> CustomTitle { get; set; }
+        public DataBand DataBand { get; set; }
 
         public Antena(EntityId id, AntenaProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
             : base(id, proto, transform, context)
@@ -48,15 +49,7 @@ namespace ProgramableNetwork
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
 
-            // TODO
-            // 1) List of broadcasted frequencies on FM (later will be added more of them)
-            // 2) FM: 85.5 - 108.0 kHz (steps by half, stored as 0-44 int)
-            //        selector will be [+][-]
-            // 3) only selected frequencies will be broadcasted to different antenas
-            // 4) signal to tower will be set from controller or from broadcasting tower
-            // 5) the signal will be valid for 200 ms, then it will send noise
-            // 6) the controller will read the signal value
-            // 7) Dictionary of received signals on FM (later will be added more of them)
+            DataBand = new DataBand(Context, DataBands.UnknownDataBandProto, 0);
         }
 
         [DoNotSave(0, null)]
@@ -131,6 +124,8 @@ namespace ProgramableNetwork
 
             writer.WriteInt(GeneralPriority);
             writer.WriteGeneric(m_maintenanceConsumer);
+
+            DataBand.Serialize(DataBand, writer);
         }
 
         protected override void DeserializeData(BlobReader reader)
@@ -144,6 +139,8 @@ namespace ProgramableNetwork
 
             GeneralPriority = reader.ReadInt();
             m_maintenanceConsumer = reader.ReadGenericAs<IEntityMaintenanceProvider>();
+
+            DataBand = DataBand.Deserialize(reader);
 
             reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Normal);
         }

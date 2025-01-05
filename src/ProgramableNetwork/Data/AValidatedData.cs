@@ -4,7 +4,7 @@ using System;
 
 namespace ProgramableNetwork
 {
-    internal abstract class AValidatedData : IModData
+    public abstract class AValidatedData : IModData
     {
         public void RegisterData(ProtoRegistrator registrator)
         {
