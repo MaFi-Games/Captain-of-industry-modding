@@ -16,7 +16,7 @@ using UnityEngine;
 namespace ProgramableNetwork
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
-    public class ControllerInspector : EntityInspector<Controller, ControllerView>
+    public class ControllerInspector : EntityInspector<Controller, ControllerView>, ISelectionInspector<IEntity, EntitySelector, Controller>
     {
         private readonly ControllerView m_windowView;
         private readonly AudioSource m_invalidOpSound;

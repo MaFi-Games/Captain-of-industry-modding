@@ -39,7 +39,7 @@ namespace ProgramableNetwork
         }
     }
 
-    internal class Controllers : AValidatedData
+    internal class Entities : AValidatedData
     {
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {

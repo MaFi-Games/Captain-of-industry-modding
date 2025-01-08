@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace ProgramableNetwork
 {
-    public class EntitySelector
+    public class EntitySelector : IEntitySelector<IEntity>
     {
         public Fix32 EntitySearchDistance { get; }
         public Action Refresh { get; }
-        public IRenderedEntity Entity { set => m_set(value); }
+        public IEntity Entity { set => m_set(value); }
 
         private readonly Func<Module, IEntity, bool> m_filter;
         private readonly Action<IEntity> m_set;

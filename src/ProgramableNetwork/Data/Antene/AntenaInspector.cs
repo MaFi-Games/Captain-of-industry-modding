@@ -16,7 +16,7 @@ using UnityEngine;
 namespace ProgramableNetwork
 {
     [GlobalDependency(RegistrationMode.AsAllInterfaces, false, false)]
-    public class AntenaInspector : EntityInspector<Antena, AntenaView>
+    public class AntenaInspector : EntityInspector<Antena, AntenaView>, ISelectionInspector<Antena, AntenaSelector, Antena>
     {
         private readonly AntenaView m_windowView;
         private readonly AudioSource m_invalidOpSound;
@@ -49,7 +49,7 @@ namespace ProgramableNetwork
         public EntityHighlighter EntityHighlighter { get; }
         public EntityHighlighter EntityHighlighterSelectable { get; }
         public ShortcutsManager ShortcutsManager { get; }
-        public EntitySelector EntitySelectionInput { get; set; }
+        public AntenaSelector EntitySelectionInput { get; set; }
 
         protected override AntenaView GetView()
         {
@@ -67,7 +67,7 @@ namespace ProgramableNetwork
                 {
                     Tile3f source = SelectedEntity.Position3f;
 
-                    Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.EntityFilter((Entity)e));
+                    Option<Antena> pickedEntity = CursorPickingManager.PickEntity<Antena>(e => EntitySelectionInput.EntityFilter(e));
                     if (pickedEntity.HasValue
                         && IsWithingDistance(source, pickedEntity.Value, EntitySelectionInput.EntitySearchDistance))
                     {
@@ -102,15 +102,15 @@ namespace ProgramableNetwork
                     Tile3f source = SelectedEntity.Position3f;
                     Fix32 innerDistance = EntitySelectionInput.EntitySearchDistance;
             
-                    Context.EntitiesManager.GetAllEntitiesOfType<Entity>()
+                    Context.EntitiesManager.GetAllEntitiesOfType<Antena>()
                         .Where(e => e is IEntityWithPosition && e is IRenderedEntity)
                         .Where(e => EntitySelectionInput.EntityFilter(e))
-                        .Where(e => IsWithingDistance(source, e as IRenderedEntity, innerDistance))
-                        .Call(e => EntityHighlighterSelectable.Highlight(e as IRenderedEntity, ColorRgba.Green))
+                        .Where(e => IsWithingDistance(source, e, innerDistance))
+                        .Call(e => EntityHighlighterSelectable.Highlight(e, ColorRgba.Green))
                         .ToList();
                 }
             
-                Option<IRenderedEntity> pickedEntity = CursorPickingManager.PickEntity<IRenderedEntity>(e => EntitySelectionInput.EntityFilter((Entity)e));
+                Option<Antena> pickedEntity = CursorPickingManager.PickEntity<Antena>(e => EntitySelectionInput.EntityFilter(e));
             
                 if (pickedEntity.IsNone || m_hoveredEntity != null)
                 {

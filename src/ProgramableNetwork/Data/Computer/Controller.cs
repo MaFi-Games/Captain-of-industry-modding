@@ -291,12 +291,10 @@ namespace ProgramableNetwork
                 return;
             }
 
-            if (IsPaused || m_maintenanceConsumer.Status.IsBroken)
+            if (IsPaused)
             {
                 CurrentInstruction = 0;
                 PowerRequired = Electricity.Zero;
-                if (!IsPaused)
-                    Maintenance.SetCurrentMaintenanceTo(Percent.Zero);
                 return;
             }
 
@@ -304,10 +302,14 @@ namespace ProgramableNetwork
             {
                 CurrentInstruction = 0;
                 PowerRequired = Prototype.IddlePower;
-                MaintenanceCosts = new MaintenanceCosts(Context.ProtosDb.GetOrThrow<VirtualProductProto>(Ids.Products.MaintenanceT1), new PartialQuantity(4));
-                Maintenance.SetCurrentMaintenanceTo(Percent.Hundred);
-                Maintenance.RefreshMaintenanceCost();
                 return;
+            }
+
+            var newCosts = new MaintenanceCosts(Context.ProtosDb.GetOrThrow<VirtualProductProto>(Ids.Products.MaintenanceT1), new PartialQuantity(Modules.Count / 4 + 4));
+            if (newCosts.MaintenancePerMonth != MaintenanceCosts.MaintenancePerMonth)
+            {
+                MaintenanceCosts = newCosts;
+                Maintenance.RefreshMaintenanceCost();
             }
 
             var requiredRunningPower = Modules
@@ -326,9 +328,12 @@ namespace ProgramableNetwork
 
             ComputingRequired = requiredComputingPower;
 
-            if (m_electricConsumer.CanConsume())
+            if (m_electricConsumer.TryConsume())
             {
-                UpdateModules();
+                if (m_maintenanceConsumer.Status.CurrentBreakdownChance < new Random().Next(100).Percent())
+                {
+                    UpdateModules();
+                }
             }
         }
 

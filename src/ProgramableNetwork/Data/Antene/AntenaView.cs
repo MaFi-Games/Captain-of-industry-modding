@@ -51,33 +51,71 @@ namespace ProgramableNetwork
 
             selectionchanged = updaterBuilder.CreateSyncer(() => m_inspector.SelectedEntity);
 
-            AddBandDisplay(itemContainer, updaterBuilder);
+            AddBandDisplay(itemContainer, updaterBuilder, (width, height) =>
+            {
+                SetContentSize(width, height + 80);
+            });
 
             AddUpdater(updaterBuilder.Build(SyncFrequency.Critical));
         }
 
-        private void AddBandDisplay(StackContainer itemContainer, UpdaterBuilder updaterBuilder)
+        private void AddBandDisplay(StackContainer itemContainer, UpdaterBuilder updaterBuilder, Action<int, int> resize)
         {
+            itemContainer.SetStackingDirection(StackContainer.Direction.TopToBottom);
+            itemContainer.SetSizeMode(StackContainer.SizeMode.Dynamic);
+
             var bandSelector = Builder.NewStackContainer("bandSelector")
+                .SetParent(itemContainer, true)
                 .SetStackingDirection(StackContainer.Direction.LeftToRight)
                 .SetHeight(40)
                 .AppendTo(itemContainer);
 
-            var bandDisplay = Builder.NewStackContainer("bandDisplay")
+            itemContainer.AddDivider(itemContainer.ItemsCount, 10, Builder.Style.Global.ControlsBgColor);
+
+            Builder.NewTxt("bandInfo")
+                .SetText("Redirected signals:");
+
+            var bandList = Builder.NewStackContainer("bandList")
+                .SetParent(itemContainer, true)
                 .SetStackingDirection(StackContainer.Direction.TopToBottom)
-                .SetSizeMode(StackContainer.SizeMode.Dynamic)
+                .SetSizeMode(StackContainer.SizeMode.StaticDirectionAligned)
                 .AppendTo(itemContainer);
 
-            updaterBuilder.Observe(() => Entity.DataBand)
+            var addButton = Builder.NewBtnGeneral("band_channel_new")
+                .SetParent(itemContainer, true)
+                .SetHeight(20)
+                .SetText("+")
+                .OnClick(() =>
+                {
+                    Entity.DataBand.CreateChannel();
+                })
+                .AppendTo(itemContainer);
+
+            //void Resize(IUiElement element)
+            //{
+            //    var fullSize = bandSelector.GetSize() + bandDisplay.GetSize() + bandList.GetSize() + addButton.GetSize();
+            //    itemContainer.UpdateItemSize(element, element.GetSize());
+            //    resize((int)fullSize.x, (int)fullSize.y);
+            //};
+            //bandSelector.SizeChanged += Resize;
+            //bandDisplay.SizeChanged += Resize;
+            //bandList.SizeChanged += Resize;
+
+            updaterBuilder.Observe(() => Entity?.DataBand)
                 .Do(band =>
                 {
                     bandSelector.ClearAndDestroyAll();
-                    if (band == null) return;
+                    if (band == null)
+                    {
+                        addButton.SetEnabled(false);
+                        return;
+                    }
+                    addButton.SetEnabled(true);
 
                     List<DataBandProto> dataBandProtos = Entity.Context.ProtosDb.All<DataBandProto>().ToList();
-                    if (band.Prototype.Id != DataBands.UnknownDataBand)
+                    if (band.Prototype.Id != DataBands.DataBand_Unknown)
                     {
-                        dataBandProtos.RemoveAll(p => p.Id == DataBands.UnknownDataBand);
+                        dataBandProtos.RemoveAll(p => p.Id == DataBands.DataBand_Unknown);
                     }
 
                     int index = dataBandProtos.IndexOf(band.Prototype);
@@ -97,15 +135,57 @@ namespace ProgramableNetwork
                             var current = dataBandProtos[i];
                             selectionButton.OnClick(() =>
                             {
-                                Entity.DataBand = new DataBand(Entity.Context, current, 0);
+                                Entity.DataBand = current.Constructor(Entity.Context, current);
                             });
                         }
                     }
-
-                    // Add display
-
                 });
-                
+
+            updaterBuilder.Observe(() => Entity?.DataBand?.Channels, new ChannelComparator(() => Entity?.DataBand?.Prototype?.Comparator))
+                .Do(list =>
+                {
+                    bandList.ClearAndDestroyAll();
+                    bandList.SetHeight(0);
+                    itemContainer.UpdateSizesFromItems();
+                    if (list == null || Entity?.DataBand == null)
+                    {
+                        return;
+                    }
+
+                    var proto = Entity.DataBand.Prototype;
+
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        IDataBandChannel item = list[i];
+                        var row = Builder.NewStackContainer("band_channel_" + i)
+                            .SetStackingDirection(StackContainer.Direction.LeftToRight)
+                            .SetHeight(40);
+
+                        new AntenaPicker(Builder, Entity.Prototype, item, value => item.Antena = value, proto.Distance, () => { }, this, m_inspector)
+                            .AppendTo(row);
+
+                        var text = Builder.NewTxt("band_channel_value_" + i)
+                            .SetHeight(40)
+                            .SetText(proto.Display(Entity.Context, item))
+                            .SetAlignment(UnityEngine.TextAnchor.MiddleLeft)
+                            .AppendTo(row);
+
+                        proto.Buttons(Builder, row, item, () => {
+                            text.SetText(proto.Display(Entity.Context, item));
+                        });
+
+                        Builder.NewBtnGeneral("band_channel_remove_" + i)
+                            .SetSize(20, 20)
+                            .SetText("X")
+                            .OnClick(() => Entity.DataBand.RemoveChannel(item))
+                            .AppendTo(row);
+
+                        row.AppendTo(bandList);
+                    }
+
+                    bandList.SetHeight(40 * (1 + list.Count));
+                    itemContainer.UpdateSizesFromItems();
+                });
         }
     }
 }

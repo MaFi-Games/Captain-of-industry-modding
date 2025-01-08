@@ -20,6 +20,7 @@ using Mafi.Core.Maintenance;
 using Mafi.Core.Products;
 using Mafi.Core.Entities.Static;
 using Mafi.Unity.UserInterface;
+using static ProgramableNetwork.DataBands;
 
 namespace ProgramableNetwork
 {
@@ -37,7 +38,7 @@ namespace ProgramableNetwork
         };
 
         public Option<string> CustomTitle { get; set; }
-        public DataBand DataBand { get; set; }
+        public IDataBand DataBand { get; set; }
 
         public Antena(EntityId id, AntenaProto proto, TileTransform transform, EntityContext context, IEntityMaintenanceProvidersFactory maintenanceProvidersFactory)
             : base(id, proto, transform, context)
@@ -49,7 +50,7 @@ namespace ProgramableNetwork
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
             m_maintenanceConsumer = maintenanceProvidersFactory.CreateFor(this);
 
-            DataBand = new DataBand(Context, DataBands.UnknownDataBandProto, 0);
+            DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"));
         }
 
         [DoNotSave(0, null)]
@@ -93,7 +94,7 @@ namespace ProgramableNetwork
 
         public static Antena Deserialize(BlobReader reader)
         {
-            if (reader.TryStartClassDeserialization(out Antena value, (Func<BlobReader, Type, Antena>)null))
+            if (reader.TryStartClassDeserialization(out Antena value, null))
             {
                 reader.EnqueueDataDeserialization(value, s_deserializeDataDelayedAction);
             }
@@ -109,6 +110,19 @@ namespace ProgramableNetwork
             Prototype = Context.ProtosDb.Get<AntenaProto>(m_protoId).ValueOrThrow("Invalid antene proto: " + m_protoId);
             m_electricConsumer = Context.ElectricityConsumerFactory.CreateConsumer(this);
             m_computingConsumer = Context.ComputingConsumerFactory.CreateConsumer(this);
+
+            if (DataBand == null)
+            {
+                DataBand = new UnkownnDataBandType(Context, Context.ProtosDb.Get<DataBandProto>(DataBand_Unknown).ValueOrThrow("Unknown signal not found"));
+            }
+            else
+            {
+                Log.Info($"Loaded DataBand type: {DataBand.GetType().FullName}");
+                DataBand = (DataBand as UnloadedDataBand).Deserialize(Context, saveVersion);
+                DataBand.Context = Context;
+                DataBand.initContext();
+                Log.Info($"Deserialized DataBand type: {DataBand.GetType().FullName}");
+            }
         }
 
         [DoNotSave(0, null)]
@@ -125,13 +139,13 @@ namespace ProgramableNetwork
             writer.WriteInt(GeneralPriority);
             writer.WriteGeneric(m_maintenanceConsumer);
 
-            DataBand.Serialize(DataBand, writer);
+            DataBand.Serialize(writer);
         }
 
         protected override void DeserializeData(BlobReader reader)
         {
             base.DeserializeData(reader);
-            m_protoId = new Mafi.Core.Entities.Static.StaticEntityProto.ID(reader.ReadString());
+            m_protoId = new StaticEntityProto.ID(reader.ReadString());
             int version = reader.ReadInt();
 
             ErrorMessage = reader.ReadString();
@@ -140,7 +154,7 @@ namespace ProgramableNetwork
             GeneralPriority = reader.ReadInt();
             m_maintenanceConsumer = reader.ReadGenericAs<IEntityMaintenanceProvider>();
 
-            DataBand = DataBand.Deserialize(reader);
+            DataBand = reader.ReadDataBand();
 
             reader.RegisterInitAfterLoad(this, nameof(initContexts), InitPriority.Normal);
         }
@@ -232,10 +246,7 @@ namespace ProgramableNetwork
 
             ComputingRequired = requiredComputingPower;
 
-            if (m_electricConsumer.CanConsume())
-            {
-                // TODO update signals
-            }
+            DataBand.Update();
         }
 
         public Quantity ReceiveAsMuchAsFromPort(ProductQuantity pq, IoPortToken sourcePort)
