@@ -47,7 +47,7 @@ namespace ProgramableNetwork
 
             registrator.PrototypesDb.Add(new ControllerProto(
                 id: NewIds.Controllers.Controller,
-                strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization (connect up to 5 other devices, has 50 slots)"),
+                strings: Proto.CreateStr(NewIds.Controllers.Controller, "Controller", "Handles basic operations and automatization"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow("[1]"),
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
                 allowedModules: (module) => module.AllowedDevices.Contains(NewIds.Controllers.Controller),
@@ -60,7 +60,7 @@ namespace ProgramableNetwork
 
             registrator.PrototypesDb.Add(new AntenaProto(
                 id: NewIds.Controllers.Antena,
-                strings: Proto.CreateStr(NewIds.Controllers.Antena, "Antena", "Handles basic operations and automatization (connect up to 5 other devices, has 50 slots)"),
+                strings: Proto.CreateStr(NewIds.Controllers.Antena, "Antena", "Handles signal transfer for longer distance"),
                 layout: registrator.LayoutParser.ParseLayoutOrThrow("[3]"),
                 costs: ((EntityCostsTpl)Costs.Build.CP2(4)).MapToEntityCosts(registrator),
                 graphics: new LayoutEntityProto.Gfx(

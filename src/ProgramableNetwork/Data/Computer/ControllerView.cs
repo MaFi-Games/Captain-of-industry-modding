@@ -94,6 +94,9 @@ namespace ProgramableNetwork
 
             if (m_controller.SelectedEntity != null)
             {
+                foreach (var item in m_updaters)
+                    item.Update();
+
                 foreach (var d in new List<Action>(m_displayChanges.Values))
                     d.Invoke();
             }

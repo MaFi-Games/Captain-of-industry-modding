@@ -9,7 +9,10 @@ using Mafi.Core.Factory.ElectricPower;
 using Mafi.Core.Factory.Transports;
 using Mafi.Core.Mods;
 using Mafi.Core.Population;
+using Mafi.Unity.UiFramework;
+using Mafi.Unity.UiFramework.Components;
 using Mafi.Unity.UserInterface;
+using Mafi.Unity.UserInterface.Components;
 using RTG;
 using System;
 using System.Collections.Generic;
@@ -21,7 +24,7 @@ namespace ProgramableNetwork
 {
     internal class Modules : AValidatedData
     {
-        static readonly string[] names = new string[] { "a", "b", "c", "d" };
+        static readonly string[] names = new string[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "m", "n", "o", "p", "q" };
 
         protected override void RegisterDataInternal(ProtoRegistrator registrator)
         {
@@ -70,6 +73,7 @@ namespace ProgramableNetwork
             Forks(registrator);
             Booleans(registrator);
             Display(registrator);
+            Radio(registrator);
         }
 
         private void Stats(ProtoRegistrator registrator)
@@ -514,6 +518,243 @@ namespace ProgramableNetwork
                     // dynamic
                     .Action(ModuleFunction(i * 2))
                     .BuildAndAdd();
+            }
+        }
+
+        private void Radio(ProtoRegistrator registrator)
+        {
+            Action<Module> ReadSignals(int digits)
+            {
+                return (Module m) =>
+                {
+                    int entityId = m.Field["antena", 0];
+                    if (!m.Context.EntitiesManager
+                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Antena entity) ||
+                            !(entity.DataBand is FMDataBand fm))
+                    // TODO generate noise or read data
+                    {
+                        for (int i = 0; i < digits; i++)
+                        {
+                            m.Output[names[i]] = 0;
+                        }
+                    }
+                    else
+                    {
+                        int[] signals = fm.Read(m.Field["fm", 0]);
+                        int minCount = Math.Min(signals.Length, digits);
+                        for (int i = 0; i < minCount; i++)
+                        {
+                            m.Output[names[i]] = signals[i];
+                        }
+                        for (int i = minCount; i < digits; i++)
+                        {
+                            m.Output[names[i]] = 0;
+                        }
+                    }
+
+                    int value = m.Input["a"];
+                    string text = value.ToString($"D{digits}");
+                    m.Display["a"] = text.Length > digits ? text.Substring(text.Length - digits) : text;
+                };
+            }
+            foreach (int i in new int[] { 2, 4, 8, 16 })
+            {
+                var module = registrator
+                    .ModuleBuilderStart($"Radio_In_FM_{i}", $"FM receiver ({i} signals)", $"FM\ni-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Antene)
+                    .AddCategory(Category.AnteneFM)
+                    .AddCustomField("fm", "FM", () => 20, (UiBuilder builder, StackContainer container, Reference reference, Action refresh) => {
+                        builder.NewTxt("NvaluekHz")
+                            .SetText(((171 + reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
+                            .SetSize(60, 20)
+                            .AppendTo(container);
+                        builder.NewBtnGeneral("NstartkHz")
+                            .SetText("|<")
+                            .OnClick(() =>
+                            {
+                                reference.Value = 0;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+                        builder.NewBtnGeneral("N-5kHz")
+                            .SetText("<<")
+                            .OnClick(() =>
+                            {
+                                reference.Value -= 10;
+                                if (reference.Value < 0)
+                                    reference.Value += 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("N-0.5kHz")
+                            .SetText("<")
+                            .OnClick(() =>
+                            {
+                                reference.Value -= 1;
+                                if (reference.Value < 0)
+                                    reference.Value += 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("N+0.5kHz")
+                            .SetText(">")
+                            .OnClick(() =>
+                            {
+                                reference.Value += 1;
+                                if (reference.Value > 44)
+                                    reference.Value -= 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("N+5kHz")
+                            .SetText(">>")
+                            .OnClick(() =>
+                            {
+                                reference.Value += 10;
+                                if (reference.Value > 44)
+                                    reference.Value -= 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("NendkHz")
+                            .SetText(">|")
+                            .OnClick(() =>
+                            {
+                                reference.Value = 44;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+                    })
+                    .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
+                    .AddControllerDevice()
+                    // dynamic
+                    .Action(ReadSignals(i));
+
+                for (int j = 0; j < i; j++)
+                {
+                    module.AddOutput(names[j], names[j].ToUpper());
+                }
+
+                module.BuildAndAdd();
+            }
+
+            Action<Module> WriteSignals(int digits)
+            {
+                return (Module m) =>
+                {
+                    int entityId = m.Field["antena", 0];
+                    if (m.Context.EntitiesManager
+                            .TryGetEntity(new Mafi.Core.EntityId(entityId), out Antena entity) &&
+                            (entity.DataBand is FMDataBand fm))
+                    {
+                        int[] signals = new int[digits];
+                        for (int i = 0; i < digits; i++)
+                        {
+                            signals[i] = m.Input[names[i], 0];
+                        }
+                        fm.Update(m.Field["fm", 0], signals);
+                    }
+                };
+            }
+            foreach (int i in new int[] { 2, 4, 8, 16 })
+            {
+                var module = registrator
+                    .ModuleBuilderStart($"Radio_Out_FM_{i}", $"FM broadcaster ({i} signals)", $"FM\no-{i}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Antene)
+                    .AddCategory(Category.AnteneFM)
+                    .AddCustomField("fm", "FM", () => 20, (UiBuilder builder, StackContainer container, Reference reference, Action refresh) => {
+                        builder.NewTxt("NvaluekHz")
+                            .SetText(((171 + reference.Value).ToFix32() * 0.5f.ToFix32()).ToStringRounded(1) + " kHz")
+                            .SetSize(60, 20)
+                            .AppendTo(container);
+                        builder.NewBtnGeneral("NstartkHz")
+                            .SetText("|<")
+                            .OnClick(() =>
+                            {
+                                reference.Value = 0;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+                        builder.NewBtnGeneral("N-5kHz")
+                            .SetText("<<")
+                            .OnClick(() =>
+                            {
+                                reference.Value -= 10;
+                                if (reference.Value < 0)
+                                    reference.Value += 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("N-0.5kHz")
+                            .SetText("<")
+                            .OnClick(() =>
+                            {
+                                reference.Value -= 1;
+                                if (reference.Value < 0)
+                                    reference.Value += 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("N+0.5kHz")
+                            .SetText(">")
+                            .OnClick(() =>
+                            {
+                                reference.Value += 1;
+                                if (reference.Value > 44)
+                                    reference.Value -= 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("N+5kHz")
+                            .SetText(">>")
+                            .OnClick(() =>
+                            {
+                                reference.Value += 10;
+                                if (reference.Value > 44)
+                                    reference.Value -= 45;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+
+                        builder.NewBtnGeneral("NendkHz")
+                            .SetText(">|")
+                            .OnClick(() =>
+                            {
+                                reference.Value = 44;
+                                refresh();
+                            })
+                            .SetSize(20, 20)
+                            .AppendTo(container);
+                    })
+                    .AddEntityField<Antena>("antena", "Antena", distance: 5.ToFix32())
+                    .AddControllerDevice()
+                    // dynamic
+                    .Action(WriteSignals(i));
+
+                for (int j = 0; j < i; j++)
+                {
+                    module.AddInput(names[j], names[j].ToUpper());
+                }
+
+                module.BuildAndAdd();
             }
         }
     }

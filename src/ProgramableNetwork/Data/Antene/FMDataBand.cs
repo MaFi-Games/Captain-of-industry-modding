@@ -20,7 +20,12 @@ namespace ProgramableNetwork
         {
             Prototype = prototype;
             Context = context;
-            m_channels = new Lyst<FMDataBandChannel>();
+            m_redirected = new Lyst<FMDataBandChannel>();
+            m_active = new Lyst<FMDataBandChannel>();
+            for (int i = 0; i < prototype.Channels; i++)
+            {
+                m_active.Add(new FMDataBandChannel() { Index = i, OriginalDataBand = this });
+            }
         }
 
         private FMDataBand()
@@ -41,9 +46,10 @@ namespace ProgramableNetwork
         }
         public EntityContext Context { get; set; }
 
-        public IEnumerable<IDataBandChannel> Channels => m_channels?.Cast<IDataBandChannel>() ?? new List<IDataBandChannel>();
+        public IEnumerable<IDataBandChannel> Channels => m_redirected?.Cast<IDataBandChannel>() ?? new List<IDataBandChannel>();
 
-        private Lyst<FMDataBandChannel> m_channels;
+        private Lyst<FMDataBandChannel> m_redirected;
+        private Lyst<FMDataBandChannel> m_active;
 
         public static void Serialize(FMDataBand dataBand, BlobWriter writer)
         {
@@ -54,7 +60,8 @@ namespace ProgramableNetwork
         {
             writer.WriteString(m_protoId.Value);
             writer.WriteInt(SerializerVersion);
-            Lyst<FMDataBandChannel>.Serialize(m_channels, writer);
+            Lyst<FMDataBandChannel>.Serialize(m_redirected, writer);
+            Lyst<FMDataBandChannel>.Serialize(m_active, writer);
         }
 
         public static FMDataBand Deserialize(BlobReader reader)
@@ -68,7 +75,8 @@ namespace ProgramableNetwork
         {
             m_protoId = new Proto.ID(reader.ReadString());
             int version = reader.ReadInt();
-            m_channels = Lyst<FMDataBandChannel>.Deserialize(reader);
+            m_redirected = Lyst<FMDataBandChannel>.Deserialize(reader);
+            m_active = Lyst<FMDataBandChannel>.Deserialize(reader);
         }
 
         public void initContext()
@@ -78,9 +86,9 @@ namespace ProgramableNetwork
             if (optional.HasValue)
             {
                 Prototype = optional.Value;
-                foreach (var channel in m_channels)
+                foreach (var channel in m_redirected)
                 {
-                    channel.UpdateAntenaReference(Context.EntitiesManager);
+                    channel.UpdateAntenaReference(this, Context.EntitiesManager);
                 }
             }
             else
@@ -92,17 +100,45 @@ namespace ProgramableNetwork
 
         public void Update()
         {
+            foreach (var item in m_active)
+            {
+                if (item.ValidIterations-- == 0)
+                {
+                    // After one second reset signal
+                    item.Value = new int[0];
+                }
+            }
 
+            foreach (var item in m_redirected)
+            {
+                item.Update();
+            }
+        }
+
+        public void Update(int index, int[] value)
+        {
+            m_active[index].Value = new int[value.Length];
+            Array.Copy(value, m_active[index].Value, value.Length);
+            m_active[index].ValidIterations = 60;
+        }
+
+        public int[] Read(int index)
+        {
+            int[] ints = new int[m_active[index].Value.Length];
+            if (m_active[index].ValidIterations > 0)
+                Array.Copy(m_active[index].Value, ints, ints.Length);
+            // else only zeros
+            return ints;
         }
 
         public void CreateChannel()
         {
-            m_channels.Add(new FMDataBandChannel());
+            m_redirected.Add(new FMDataBandChannel() { OriginalDataBand = this });
         }
 
         public void RemoveChannel(IDataBandChannel channel)
         {
-            m_channels.Remove(channel as FMDataBandChannel);
+            m_redirected.Remove(channel as FMDataBandChannel);
         }
     }
 }

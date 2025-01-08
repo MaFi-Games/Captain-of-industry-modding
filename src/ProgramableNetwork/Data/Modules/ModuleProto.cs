@@ -15,6 +15,7 @@ using Mafi.Base;
 using Mafi.Unity.UserInterface.Style;
 using Mafi.Unity.UiFramework.Components;
 using Mafi.Core.Entities.Static;
+using Mafi.Unity.UserInterface;
 
 namespace ProgramableNetwork
 {
@@ -388,14 +389,39 @@ namespace ProgramableNetwork
 
             public Builder AddEntityField(string id, string name, Func<Module, IEntity, bool> entitySelector = null, Fix32? distance = null)
             {
-                m_fields.Add(new EntityField(id, name, entitySelector, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, null, entitySelector, distance ?? 5.ToFix32()));
                 return this;
             }
 
             public Builder AddEntityField<T>(string id, string name, Fix32? distance = null)
                 where T : IEntity
             {
-                m_fields.Add(new EntityField(id, name, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                m_fields.Add(new EntityField(id, name, null, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddEntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> entitySelector = null, Fix32? distance = null)
+            {
+                m_fields.Add(new EntityField(id, name, shortDesc, entitySelector, distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddEntityField<T>(string id, string name, string shortDesc, Fix32? distance = null)
+                where T : IEntity
+            {
+                m_fields.Add(new EntityField(id, name, shortDesc, (module, entity) => entity is T, distance ?? 5.ToFix32()));
+                return this;
+            }
+
+            public Builder AddCustomField(string id, string name, Func<int> size, Action<UiBuilder, StackContainer, Reference, Action> ui)
+            {
+                m_fields.Add(new CustomField(id, name, null, size, ui));
+                return this;
+            }
+
+            public Builder AddCustomField(string id, string name, string shortDesc, Func<int> size, Action<UiBuilder, StackContainer, Reference, Action> ui)
+            {
+                m_fields.Add(new CustomField(id, name, shortDesc, size, ui));
                 return this;
             }
         }

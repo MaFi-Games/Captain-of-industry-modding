@@ -15,14 +15,16 @@ namespace ProgramableNetwork
     {
         private string id;
         private string name;
+        private string shortDesc;
         private Func<Module, IEntity, bool> entitySelector;
         private Fix32 distance;
         private Fix64 sqrDistance;
 
-        public EntityField(string id, string name, Func<Module, IEntity, bool> entitySelector, Fix32 distance)
+        public EntityField(string id, string name, string shortDesc, Func<Module, IEntity, bool> entitySelector, Fix32 distance)
         {
             this.id = id;
             this.name = name;
+            this.shortDesc = shortDesc;
             this.entitySelector = entitySelector;
             this.distance = distance;
             this.sqrDistance = distance.ToFix64() * distance.ToFix64();
@@ -67,16 +69,24 @@ namespace ProgramableNetwork
             fieldContainer.SetStackingDirection(StackContainer.Direction.LeftToRight);
             fieldContainer.SetHeight(40);
 
-            uiBuilder
-                .NewTxt("name")
+            var txt = uiBuilder
+                .NewBtnGeneral("name")
                 .SetParent(fieldContainer, true)
                 .SetWidth(180)
                 .SetHeight(40)
                 .SetText(Name)
+                .SetEnabled(false)
                 .AppendTo(fieldContainer);
 
             new Picker(uiBuilder, module, id, entitySelector, distance, updateDialog, parentWindow, inspector)
                 .AppendTo(fieldContainer);
+
+            if (shortDesc != null)
+            {
+                var tooltip = new Tooltip(uiBuilder);
+                tooltip.SetText(shortDesc);
+                tooltip.AttachTo(txt);
+            }
         }
 
         public class Picker : StackContainer

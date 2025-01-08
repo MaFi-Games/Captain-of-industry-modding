@@ -78,10 +78,15 @@ namespace ProgramableNetwork
 
         public void AddToConfig(EntityConfigData data)
         {
+            data.SetString("databand_type", DataBand.Prototype.Id.Value);
         }
 
         public void ApplyConfig(EntityConfigData data)
-        { 
+        {
+            string id = data.GetString("databand_type").ValueOrNull ?? DataBands.DataBand_Unknown.Value;
+            Proto.ID dataBandType = new Proto.ID(id);
+            DataBandProto dataBandProto = Context.ProtosDb.Get<DataBandProto>(dataBandType).ValueOrNull;
+            DataBand = dataBandProto.Constructor(Context, dataBandProto);
         }
 
         public static void Serialize(Antena value, BlobWriter writer)

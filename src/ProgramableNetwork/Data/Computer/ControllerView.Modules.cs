@@ -61,8 +61,6 @@ namespace ProgramableNetwork
                 .AppendTo(m_container)
                 .DynamicSizeListener(m_container, Dynamic.Height);
 
-            updaterBuilder.Observe(WasOrderChanged, new ModuleIdComparator()).Do(RedrawComponents);
-            updaterBuilder.Observe(() => (m_targetRow, m_targetColumn)).Do((change) => RedrawComponents(Entity.Modules.Select(m => m.Id).ToLyst()));
             updaterBuilder.Observe(() => Entity).Do((entity) => {
                 CloseDialogs();
                 m_targetRow = -1;
@@ -73,8 +71,16 @@ namespace ProgramableNetwork
                 OutputConnection = null;
                 m_controller.EntityHighlighterSelectable.ClearAllHighlights();
                 m_updaters.Clear();
+
+                if (entity != null)
+                {
+                    RedrawComponents(Entity.Modules.Select(m => m.Id).ToLyst());
+                }
             });
-            updaterBuilder.Observe(WasUpdated).Do(UpdateChanged);
+            updaterBuilder.Observe(WasOrderChanged, new ModuleIdComparator()).Do(RedrawComponents);
+            updaterBuilder.Observe(() => (m_targetRow, m_targetColumn)).Do((change) => RedrawComponents(Entity.Modules.Select(m => m.Id).ToLyst()));
+
+            //updaterBuilder.Observe(WasUpdated).Do(UpdateChanged);
         }
 
         private List<IDataUpdater> WasUpdated()
@@ -617,10 +623,14 @@ namespace ProgramableNetwork
                         .SetSize(20 * display.Width, 20)
                         .AppendTo(displaysPanel);
 
-                    m_computerView.m_updaters.Add(new DataUpdater<string>(
-                        getter: () => module.Display[display.Id, display.DefaultText],
-                        setter: t => text.SetText(t),
-                        comparator: string.Equals
+                    m_computerView.m_updaters.Add(new DataUpdater<
+                            string,
+                            (Module module, Btn text, ModuleConnectorProto display)
+                        >(
+                        getter: (c) => c.module.Display[c.display.Id, c.display.DefaultText],
+                        setter: (c, t) => c.text.SetText(t),
+                        comparator: string.Equals,
+                        context: (module, text, display)
                     ));
                 }
             }
