@@ -129,10 +129,13 @@ namespace ProgramableNetwork
                             }
                         })
                         .SetOnMouseEnterLeaveActions(
-                            () => { m_computerView.m_decription = input.Name.Name; },
+                            () => { },
                             () => { }
                         )
-                        .AppendTo(inputsPanel);
+                        .AppendTo(inputsPanel)
+                        .AddToolTipAndReturn()
+                        .SetText((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' '))
+                        .SetExtraOffsetFromBottom(-65);
                 }
             }
 
@@ -180,10 +183,13 @@ namespace ProgramableNetwork
                         })
                         .OnClick(() => m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id))
                         .SetOnMouseEnterLeaveActions(
-                            () => { m_computerView.m_decription = output.Name.Name; },
+                            () => { },
                             () => { }
                         )
-                        .AppendTo(inputsPanel);
+                        .AppendTo(inputsPanel)
+                        .AddToolTipAndReturn()
+                        .SetText((output.Name.Name + ": " + output.Name.DescShort).TrimEnd(':', ' '))
+                        .SetExtraOffsetFromBottom(-5);
                 }
             }
 
