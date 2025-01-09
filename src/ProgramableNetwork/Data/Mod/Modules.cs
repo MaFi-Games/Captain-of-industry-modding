@@ -72,6 +72,7 @@ namespace ProgramableNetwork
             Stats(registrator);
             Forks(registrator);
             Booleans(registrator);
+            Decisions(registrator);
             Display(registrator);
             Radio(registrator);
         }
@@ -247,6 +248,50 @@ namespace ProgramableNetwork
                         m.Output["b"] = m.Output["a"] > 0 ? 0 : 1;
                     })
                 .BuildAndAdd();
+        }
+
+        private void Decisions(ProtoRegistrator registrator)
+        {
+            Action<Module> Select(int count)
+            {
+                return m =>
+                {
+                    int index = m.Field["index", int.MaxValue];
+                    for (int i = 0; i < count; i++)
+                    {
+                        string name = names[i];
+                        int value = m.Field[name, 0];
+                        if (index <= value)
+                        {
+                            m.Output["selected"] = value;
+                            return;
+                        }
+                    }
+                    m.Output["selected"] = m.Input["else", 0];
+                };
+            }
+            foreach (int i in new int[] { 4, 8 })
+            {
+                var builder = registrator
+                    .ModuleBuilderStart($"Decision_Select_{i}", $"Select ({i-1} pins)", $"SEL-{i-1}", Assets.Base.Products.Icons.Vegetables_svg)
+                    .AddCategory(Category.Decision)
+                    .AddCategory(Category.Control)
+                    .AddInput("index", "Index")
+                    .AddOutput("selected", "Selected")
+                    .AddDisplay("index", "Index", 2)
+                    .AddControllerDevice()
+                    // dynamic
+                    .Action(Select(i - 2));
+
+                for (int j = 0; j < i - 1; j++)
+                    builder.AddInput(names[j], names[j].ToUpper());
+
+                for (int j = 0; j < i - 2; j++)
+                    builder.AddInt32Field(names[j], names[j].ToUpper() + " threshold", j);
+
+                builder.AddInput("else", "Else");
+                builder.BuildAndAdd();
+            }
         }
 
         private static void Connections(ProtoRegistrator registrator)
@@ -467,7 +512,7 @@ namespace ProgramableNetwork
                 .AddInput("a", "A")
                 .AddInput("b", "B")
                 .AddOutput("c", "C")
-                .Action(m => { m.Output["c"] = m.Input["a", 0] > m.Input["b", 0] ? 1 : 0; })
+                .Action(m => { m.Output["c"] = m.Input["a", 0] < m.Input["b", 0] ? 1 : 0; })
                 .AddControllerDevice()
                 .BuildAndAdd();
 
