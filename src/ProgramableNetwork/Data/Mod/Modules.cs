@@ -278,16 +278,16 @@ namespace ProgramableNetwork
                     .AddCategory(Category.Control)
                     .AddInput("index", "Index")
                     .AddOutput("selected", "Selected")
-                    .AddDisplay("index", "Index", 2)
+                    .AddDisplay("index", "Index", i)
                     .AddControllerDevice()
                     // dynamic
                     .Action(Select(i - 2));
 
-                for (int j = 0; j < i - 1; j++)
+                for (int j = 0; j < i - 2; j++)
                     builder.AddInput(names[j], names[j].ToUpper());
 
                 for (int j = 0; j < i - 2; j++)
-                    builder.AddInt32Field(names[j], names[j].ToUpper() + " threshold", j);
+                    builder.AddInt32Field(names[j], names[j].ToUpper() + ": Index ≤", j);
 
                 builder.AddInput("else", "Else");
                 builder.BuildAndAdd();
