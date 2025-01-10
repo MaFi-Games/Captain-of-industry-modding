@@ -256,14 +256,18 @@ namespace ProgramableNetwork
             {
                 return m =>
                 {
-                    int index = m.Field["index", int.MaxValue];
+                    int index = m.Input["index", int.MaxValue];
+                    int digits = count * 2;
+                    string text = index.ToString($"D{digits}");
+                    m.Display["index"] = text.Length > digits ? text.Substring(text.Length - digits) : text;
+
                     for (int i = 0; i < count; i++)
                     {
                         string name = names[i];
                         int value = m.Field[name, 0];
                         if (index <= value)
                         {
-                            m.Output["selected"] = value;
+                            m.Output["selected"] = m.Input[name, 0];
                             return;
                         }
                     }
@@ -494,6 +498,17 @@ namespace ProgramableNetwork
 
         private void Comparation(ProtoRegistrator registrator)
         {
+            registrator
+                .ModuleBuilderStart("Compare_Int_Equal", "Compare: A = B", "A=B", Assets.Base.Products.Icons.Vegetables_svg)
+                .AddCategory(Category.Boolean)
+                .AddCategory(Category.Arithmetic)
+                .AddInput("a", "A")
+                .AddInput("b", "B")
+                .AddOutput("c", "C")
+                .Action(m => { m.Output["c"] = m.Input["a", 0] == m.Input["b", 0] ? 1 : 0; })
+                .AddControllerDevice()
+                .BuildAndAdd();
+
             registrator
                 .ModuleBuilderStart("Compare_Int_Greater", "Compare: A > B", "A>B", Assets.Base.Products.Icons.Vegetables_svg)
                 .AddCategory(Category.Boolean)
