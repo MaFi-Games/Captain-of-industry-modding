@@ -57,10 +57,6 @@ namespace ProgramableNetwork
                         status.SetStatusWorking();
                 });
 
-            var decription = AddStatusInfoPanel();
-            updaterBuilder.Observe(() => m_decription ?? Mafi.Localization.LocStr.Empty)
-                .Do(instr => decription.SetStatus("Pin: " + instr.TranslatedString, StatusPanel.State.Ok));
-
             AddGeneralPriorityPanel(m_controller.Context, () => m_controller.SelectedEntity);
 
             itemContainer.AppendDivider(5, Style.EntitiesMenu.MenuBg);
