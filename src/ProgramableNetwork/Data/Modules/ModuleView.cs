@@ -11,6 +11,8 @@ namespace ProgramableNetwork
 {
     public partial class ControllerView
     {
+        private ModuleConnector m_higlighted;
+
         private class ModuleView : StackContainer
         {
             private readonly Module m_module;
@@ -98,8 +100,8 @@ namespace ProgramableNetwork
                     var input = inputs[i];
                     bool isConnected = module.InputModules.ContainsKey(input.Id);
 
-                    builder.NewBtnGeneral($"{module.Id}_input_{i}")
-                        .SetText("O")
+                    Btn btn = builder.NewBtnGeneral($"{module.Id}_input_{i}");
+                    btn.SetText("O")
                         .SetButtonStyle((
                                 isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn
                             ).Extend(backgroundClr: ColorRgba.DarkGreen))
@@ -136,6 +138,28 @@ namespace ProgramableNetwork
                         .AddToolTipAndReturn()
                         .SetText((input.Name.Name + ": " + input.Name.DescShort).TrimEnd(':', ' '))
                         .SetExtraOffsetFromBottom(-65);
+
+                    m_computerView.m_updaters.Add(new DataUpdater<BtnStyle, int>(
+                        (context) =>
+                        {
+                            var baseStyle = (isConnected ? builder.Style.Global.GeneralBtnActive : builder.Style.Global.GeneralBtn)
+                                .Extend(backgroundClr: ColorRgba.DarkGreen);
+
+                            if (isConnected && m_computerView.m_higlighted != null &&
+                                module.InputModules
+                                    .Where(pair => pair.Key == input.Id)
+                                    .Select(pair => pair.Value)
+                                    .Any(connector => connector.Equals(m_computerView.m_higlighted)))
+                                return baseStyle.Extend(
+                                    backgroundClr: ColorRgba.Green,
+                                    text: baseStyle.Text.Extend(ColorRgba.White));
+
+                            return baseStyle;
+                        },
+                        (context, style) => btn.SetButtonStyle(style),
+                        (styleA, styleB) => styleA.Equals(styleB),
+                        0
+                    ));
                 }
             }
 
@@ -183,8 +207,8 @@ namespace ProgramableNetwork
                         })
                         .OnClick(() => m_computerView.OutputConnection = new ModuleConnector(module.Id, output.Id))
                         .SetOnMouseEnterLeaveActions(
-                            () => { },
-                            () => { }
+                            () => { m_computerView.m_higlighted = new ModuleConnector(module.Id, output.Id); },
+                            () => { m_computerView.m_higlighted = null; }
                         )
                         .AppendTo(inputsPanel)
                         .AddToolTipAndReturn()

@@ -23,5 +23,10 @@ namespace ProgramableNetwork
         {
             return new ModuleConnector(reader.ReadLong(), reader.ReadString());
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ModuleConnector mc && this.ModuleId == mc.ModuleId && this.OutputId == mc.OutputId;
+        }
     }
 }
