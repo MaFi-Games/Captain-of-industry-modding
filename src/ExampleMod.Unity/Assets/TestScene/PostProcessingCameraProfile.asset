@@ -44,6 +44,25 @@ MonoBehaviour:
   opacity:
     overrideState: 0
     value: 1
+--- !u!114 &-6120681001521146965
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1434519539, guid: 2ea7f15cc536d284e975c021d0d1befd, type: 3}
+  m_Name: Greyscale
+  m_EditorClassIdentifier: 
+  active: 0
+  enabled:
+    overrideState: 1
+    value: 1
+  blend:
+    overrideState: 1
+    value: 0.509
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -83,13 +102,13 @@ MonoBehaviour:
     value: 1
   threshold:
     overrideState: 1
-    value: 0.9
+    value: 0.7
   softKnee:
     overrideState: 0
     value: 0.5
   clamp:
-    overrideState: 0
-    value: 65472
+    overrideState: 1
+    value: 3
   diffusion:
     overrideState: 0
     value: 6
@@ -140,12 +159,12 @@ MonoBehaviour:
     value: 0.3
   toneCurveToeLength:
     overrideState: 1
-    value: 0.4
+    value: 0.3
   toneCurveShoulderStrength:
     overrideState: 1
     value: 1
   toneCurveShoulderLength:
-    overrideState: 1
+    overrideState: 0
     value: 1.5
   toneCurveShoulderAngle:
     overrideState: 0
@@ -180,10 +199,10 @@ MonoBehaviour:
     value: 0
   postExposure:
     overrideState: 1
-    value: 1
+    value: 0.9
   contrast:
-    overrideState: 0
-    value: 0
+    overrideState: 1
+    value: 10
   mixerRedOutRedIn:
     overrideState: 0
     value: 100
@@ -212,8 +231,8 @@ MonoBehaviour:
     overrideState: 0
     value: 100
   lift:
-    overrideState: 0
-    value: {x: 1, y: 1, z: 1, w: -0.22788925}
+    overrideState: 1
+    value: {x: 1, y: 1, z: 1, w: -0.101706274}
   gamma:
     overrideState: 1
     value: {x: 1, y: 1, z: 1, w: -0.34482753}
@@ -1469,7 +1488,7 @@ MonoBehaviour:
     value: 1
   intensity:
     overrideState: 1
-    value: 1
+    value: 0.1
   color:
     overrideState: 0
     value: {r: 0, g: 0, b: 0, a: 1}
@@ -1486,8 +1505,11 @@ MonoBehaviour:
     overrideState: 0
     value: -12
   thicknessModifier:
+    overrideState: 1
+    value: 5
+  zBias:
     overrideState: 0
-    value: 1
+    value: 0.0001
   directLightingStrength:
     overrideState: 0
     value: 0

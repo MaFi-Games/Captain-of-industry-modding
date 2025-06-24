@@ -10,9 +10,12 @@ Assets/AssetStoreTools*
 Assets/Sandbox*
 Assets/UnityVS/Editor/*
 Assets/DLLs/*.dll
+Assets/DLLs/*.pdb
 Assets/DLLs/*.meta
 AssetBundles/*
 game_Data/*
 game.exe
 UnityPlayer.dll
 UserSettings/
+*.csproj
+GameDebugState.txt

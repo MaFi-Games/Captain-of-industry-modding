@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <WarningLevel>9999</WarningLevel>
@@ -19,6 +19,7 @@
     <DebugType>portable</DebugType>
     <DefineConstants></DefineConstants>
     <Optimize>true</Optimize>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <OutputPath>bin\Release\</OutputPath>
   </PropertyGroup>
 
@@ -88,4 +89,9 @@
       <HintPath>$(COI_ROOT)\Captain of Industry_Data\Managed\Unity.VectorGraphics.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <!--<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(ProjectDir)' != '*Undefined*' ">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ProjectDir)..\ExampleMod.Unity\Assets\Dlls\" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ProjectDir)..\ExampleMod.Unity\Assets\Dlls\" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).xml" DestinationFolder="$(ProjectDir)..\ExampleMod.Unity\Assets\Dlls\" Condition="$(Configuration)==Release" />
+  </Target>-->
 </Project>

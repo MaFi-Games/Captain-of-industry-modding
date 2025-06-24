@@ -21,7 +21,7 @@ internal class ExampleMachineData : IModData {
 				"B~>[2][2][3][5][5][7][7][4][3]>'W",
 				"   [2][2][2][3][3][7][7][4][3]   ",
 				"   [2][2][2][2][2][2][2][2][3]>@E")
-			.SetCategories(Ids.ToolbarCategories.MachinesMetallurgy)
+			.SetCategories(Ids.ToolbarCategories.Smelting)
 			.SetPrefabPath("Assets/ExampleMod/BlastFurnace.prefab")
 			.SetAnimationParams(
 				animParams: AnimationParams.RepeatTimes(Duration.FromKeyframes(360),

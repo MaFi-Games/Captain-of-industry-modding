@@ -11,6 +11,7 @@ TagManager:
   - NoCol
   - NoHi_NoCol
   - NoOnlyHi
+  - Persistent
   layers:
   - Default
   - TransparentFX

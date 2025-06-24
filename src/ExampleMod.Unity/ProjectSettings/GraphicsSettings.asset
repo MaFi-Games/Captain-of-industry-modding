@@ -41,9 +41,8 @@ GraphicsSettings:
   - {fileID: 16001, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 17000, guid: 0000000000000000f000000000000000, type: 0}
   m_PreloadedShaders: []
-  m_PreloadShadersBatchTimeLimit: -1
-  m_SpritesDefaultMaterial: {fileID: 10754, guid: 0000000000000000f000000000000000,
-    type: 0}
+  m_PreloadShadersBatchTimeLimit: 100
+  m_SpritesDefaultMaterial: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_CustomRenderPipeline: {fileID: 0}
   m_TransparencySortMode: 0
   m_TransparencySortAxis: {x: 0, y: 0, z: 1}
@@ -55,7 +54,7 @@ GraphicsSettings:
     m_Tier: 2
     m_Settings:
       standardShaderQuality: 2
-      renderingPath: 3
+      renderingPath: 1
       hdrMode: 1
       realtimeGICPUUsage: 50
       useReflectionProbeBoxProjection: 1
@@ -67,21 +66,23 @@ GraphicsSettings:
       enableLPPV: 1
       useDitherMaskForAlphaBlendedShadows: 1
     m_Automatic: 0
-  m_LightmapStripping: 0
-  m_FogStripping: 0
+  m_LightmapStripping: 1
+  m_FogStripping: 1
   m_InstancingStripping: 0
-  m_LightmapKeepPlain: 1
-  m_LightmapKeepDirCombined: 1
-  m_LightmapKeepDynamicPlain: 1
-  m_LightmapKeepDynamicDirCombined: 1
-  m_LightmapKeepShadowMask: 1
-  m_LightmapKeepSubtractive: 1
-  m_FogKeepLinear: 1
-  m_FogKeepExp: 1
-  m_FogKeepExp2: 1
+  m_LightmapKeepPlain: 0
+  m_LightmapKeepDirCombined: 0
+  m_LightmapKeepDynamicPlain: 0
+  m_LightmapKeepDynamicDirCombined: 0
+  m_LightmapKeepShadowMask: 0
+  m_LightmapKeepSubtractive: 0
+  m_FogKeepLinear: 0
+  m_FogKeepExp: 0
+  m_FogKeepExp2: 0
   m_AlbedoSwatchInfos: []
   m_LightsUseLinearIntensity: 0
   m_LightsUseColorTemperature: 0
   m_DefaultRenderingLayerMask: 1
   m_LogWhenShaderIsCompiled: 0
   m_SRPDefaultSettings: {}
+  m_CameraRelativeLightCulling: 0
+  m_CameraRelativeShadowCulling: 0
